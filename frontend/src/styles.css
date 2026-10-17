@@ -502,3 +502,32 @@ ul { padding-left: 1.2rem; }
 .manual-search { display:flex;align-items:center;gap:.55rem;padding:0 .75rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-soft);color:var(--muted); }
 .manual-search input { border:0;background:transparent;box-shadow:none;flex:1; }.manual-search input:focus { box-shadow:none; }
 @media(max-width:600px){.scanner { min-height:360px; }.scanner video{aspect-ratio:4/5;object-fit:cover;}.scanner-corner.tl,.scanner-corner.bl{left:8%;}.scanner-corner.tr,.scanner-corner.br{right:8%;}.scanner-corner.tl,.scanner-corner.tr{top:14%;}.scanner-corner.bl,.scanner-corner.br{bottom:14%;}}
+
+
+/* Member portal */
+.portal-welcome,.portal-page-head { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem; }
+.portal-welcome h1,.portal-page-head h1 { margin:.25rem 0 .2rem; }
+.portal-welcome p,.portal-page-head p { margin:0;font-size:.75rem; }
+.portal-avatar { width:48px;height:48px;display:grid;place-items:center;border-radius:15px;background:var(--brand-soft);color:var(--brand); }
+.member-hero-card { display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.25rem;border:1px solid var(--line);border-radius:18px;background:radial-gradient(circle at 90% 10%,rgba(99,91,255,.15),transparent 30%),var(--surface);box-shadow:var(--shadow-sm); }
+.member-hero-card h2 { margin:.3rem 0 .45rem;font-size:1.45rem; }
+.member-status-line { display:flex;align-items:center;gap:.55rem;color:var(--muted);font-size:.72rem; }
+.membership-ring { --progress:0%;width:88px;height:88px;flex:0 0 88px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:conic-gradient(var(--brand) var(--progress),var(--surface-strong) 0);position:relative; }
+.membership-ring:after { content:'';position:absolute;inset:8px;border-radius:50%;background:var(--surface); }
+.membership-ring strong,.membership-ring span { position:relative;z-index:1; }.membership-ring strong { font:700 1.15rem 'Space Grotesk'; }.membership-ring span { color:var(--muted);font-size:.58rem; }
+.portal-stats { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem;margin:.8rem 0; }
+.portal-actions { display:flex;gap:.55rem;flex-wrap:wrap;margin:.8rem 0 1.2rem; }
+.portal-qr-card { display:grid;grid-template-columns:1fr .9fr;gap:1.2rem;align-items:center;padding:1.1rem;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-xs); }
+.qr-stage { min-height:330px;display:grid;place-items:center;border-radius:15px;background:radial-gradient(circle,rgba(99,91,255,.08),transparent 60%),var(--surface-soft); }
+.qr-stage svg { padding:1rem;background:#fff;border-radius:15px;box-shadow:var(--shadow-sm); }
+.qr-info h2 { margin:.65rem 0 .25rem; }.qr-info p { font-size:.75rem; }.qr-meta { display:flex;justify-content:space-between;padding:.7rem 0;margin:.8rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:.72rem; }.qr-meta span { color:var(--muted); }
+.portal-chart { padding:1rem;margin:.75rem 0;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-xs); }
+.portal-bars { height:190px;display:flex;align-items:flex-end;gap:.6rem;padding:.4rem 0;overflow-x:auto; }
+.portal-bars > div { min-width:34px;flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.25rem; }
+.portal-bars > div > span { font-size:.62rem;font-weight:800; }.portal-bars i { width:100%;max-width:45px;min-height:8px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,var(--brand),#8d86ff); }.portal-bars small { color:var(--muted);font-size:.62rem; }
+.portal-list { overflow:hidden;border:1px solid var(--line);border-radius:15px;background:var(--surface); }
+.portal-list-row { display:flex;align-items:center;gap:.7rem;padding:.75rem;border-bottom:1px solid var(--line); }.portal-list-row:last-child{border-bottom:0}.portal-list-row:hover{background:var(--surface-soft)}
+.portal-list-row > div:nth-child(2) { flex:1;min-width:0;display:flex;flex-direction:column; }.portal-list-row > div:nth-child(2) span { color:var(--muted);font-size:.66rem;margin-top:.12rem; }.portal-list-icon { width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:10px;color:var(--brand);background:var(--brand-soft); }
+.portal-profile-card { padding:1.1rem;border:1px solid var(--line);border-radius:17px;background:var(--surface);box-shadow:var(--shadow-xs); }
+.profile-card-head { display:flex;align-items:center;gap:.7rem;padding-bottom:.9rem;border-bottom:1px solid var(--line); }.profile-card-head h2{margin:0;font-size:1rem}.profile-card-head p{margin:.15rem 0 0;font-size:.7rem}.portal-profile-avatar{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;color:var(--brand);background:var(--brand-soft)}
+@media(max-width:620px){.member-hero-card{align-items:flex-start}.portal-qr-card{grid-template-columns:1fr}.qr-stage{min-height:280px}.portal-stats{grid-template-columns:1fr 1fr}.portal-stats .stat:last-child{grid-column:1 / -1}.member-hero-card h2{font-size:1.2rem}.membership-ring{width:76px;height:76px;flex-basis:76px}}
