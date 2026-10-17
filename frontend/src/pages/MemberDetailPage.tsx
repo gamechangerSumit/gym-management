@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, CreditCard, Edit3, KeyRound, QrCode, ShieldCheck, UserRound } from 'lucide-react';
+import { ArrowLeft, CreditCard, Edit3, KeyRound, QrCode, ShieldCheck } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
