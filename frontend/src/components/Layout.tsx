@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Activity, BarChart3, Bell, CalendarCheck2, CreditCard, Dumbbell, FileClock, LayoutDashboard,
-  LogOut, Menu, QrCode, Settings, ShieldCheck, Users, UserCog, X, ChevronRight
+  LogOut, Menu, QrCode, Settings, Users, UserCog, X, ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
