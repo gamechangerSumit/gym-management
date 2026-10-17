@@ -6,7 +6,7 @@ import { get, post, qs } from '../api/client';
 import type { MemberSummary, Page, ScanResponse } from '../api/types';
 import { formatDate } from '../lib/format';
 import { Empty, ErrorBox, FormError, PageHeader, Spinner, useDebounced } from '../components/ui';
-import { CheckCircle2, Keyboard, QrCode, RefreshCw, ScanLine, XCircle } from 'lucide-react';
+import { CheckCircle2, Keyboard, RefreshCw, ScanLine, XCircle } from 'lucide-react';
 
 const PREFIX = 'GYMPASS:';
 const RESULT_TIMEOUT = 2500;
