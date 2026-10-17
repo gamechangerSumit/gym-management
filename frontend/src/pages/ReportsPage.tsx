@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { BarChart3, CalendarDays, Download, IndianRupee, TrendingUp, UsersRound } from 'lucide-react';
 import { get, qs } from '../api/client';
 import type { AttendanceReport, Collections, ExpiryReport, OutstandingReport } from '../api/types';
 import { formatDate, formatDateTime, formatMoney, titleCase } from '../lib/format';
@@ -16,17 +17,35 @@ export function ReportsPage() {
   const rangeless = tab === 'outstanding';
   const params = { from: rangeless ? '' : from, to: rangeless ? '' : to, page, size: 25 };
   const exportHref = `/api/v1/reports/${tab}/export` + qs({ from: params.from, to: params.to });
-  const tabs: [Tab, string][] = [['attendance', 'Attendance'], ['expiry', 'Expiry'], ['collections', 'Collections'], ['outstanding', 'Outstanding dues']];
+  const tabs: [Tab, string, typeof BarChart3][] = [
+    ['attendance', 'Attendance', CalendarDays],
+    ['expiry', 'Expiry', TrendingUp],
+    ['collections', 'Collections', IndianRupee],
+    ['outstanding', 'Outstanding dues', UsersRound],
+  ];
+
   return (
-    <>
-      <PageHeader title="Reports" actions={<a className="btn" href={exportHref}>Export CSV</a>} />
-      <div className="tabs" role="tablist">
-        {tabs.map(([k, l]) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => { setTab(k); setPage(0); }}>{l}</button>
+    <div className="reports-page">
+      <PageHeader title="Reports" actions={
+        <a className="btn" href={exportHref}><Download size={16} /> Export CSV</a>
+      } />
+      <div className="report-hero">
+        <div>
+          <span className="eyebrow">ANALYTICS CENTER</span>
+          <h2>See how the gym is performing.</h2>
+          <p className="muted">Turn attendance, renewals and collections into a clear operating picture.</p>
+        </div>
+        <div className="report-hero-icon"><BarChart3 size={25} /></div>
+      </div>
+      <div className="report-tabs" role="tablist">
+        {tabs.map(([k, l, Icon]) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => { setTab(k); setPage(0); }}>
+            <Icon size={16} /> {l}
+          </button>
         ))}
       </div>
       {!rangeless && (
-        <div className="filters">
+        <div className="report-filters">
           <label>From <input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(0); }} /></label>
           <label>To <input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(0); }} /></label>
         </div>
@@ -35,7 +54,7 @@ export function ReportsPage() {
       {tab === 'expiry' && <ExpiryTab params={params} setPage={setPage} />}
       {tab === 'collections' && <CollectionsTab params={params} setPage={setPage} />}
       {tab === 'outstanding' && <OutstandingTab params={params} setPage={setPage} />}
-    </>
+    </div>
   );
 }
 
@@ -47,13 +66,31 @@ function AttendanceTab({ params, setPage }: TabProps) {
     <QueryState q={q} isEmpty={(r) => r.totalCheckIns === 0} empty={<Empty title="No check-ins in this period" />}>
       {(r) => (
         <>
-          <p className="muted">{formatDate(r.from)} – {formatDate(r.to)}</p>
-          <section className="stats"><Stat label="Check-ins" value={r.totalCheckIns} /><Stat label="Unique members" value={r.uniqueMembers} /></section>
-          <ul className="list">
+          <section className="stats">
+            <Stat label="Total check-ins" value={r.totalCheckIns} />
+            <Stat label="Unique members" value={r.uniqueMembers} />
+            <Stat label="Average / day" value={r.byDay.length ? (r.totalCheckIns / r.byDay.length).toFixed(1) : '0'} />
+          </section>
+          {r.byDay.length > 0 && (
+            <div className="chart-card">
+              <div className="chart-card-head"><div><span className="eyebrow">TRAFFIC</span><h3>Daily check-ins</h3></div><span className="muted">{formatDate(r.from)} – {formatDate(r.to)}</span></div>
+              <div className="bar-chart" aria-label="Daily check-ins chart">
+                {r.byDay.map((d) => {
+                  const max = Math.max(...r.byDay.map((x) => x.count), 1);
+                  return <div className="bar-column" key={d.date} title={`${formatDate(d.date)}: ${d.count}`}>
+                    <div className="bar-value">{d.count}</div><div className="bar-track"><div className="bar-fill" style={{ height: `${Math.max(6, (d.count / max) * 100)}%` }} /></div>
+                    <span>{new Date(d.date + 'T00:00:00').toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}</span>
+                  </div>;
+                })}
+              </div>
+            </div>
+          )}
+          <div className="report-table-card">
+            <div className="report-table-head"><span>Member</span><span>Check-in</span><span>Source</span></div>
             {r.rows.items.map((x, i) => (
-              <li key={i} className="row"><div><strong>{x.memberName}</strong> <span className="muted">{x.memberCode}</span></div><span className="muted">{formatDateTime(x.checkedInAt)} · {x.source}</span></li>
+              <div className="report-table-row" key={i}><div><strong>{x.memberName}</strong><small>{x.memberCode}</small></div><span>{formatDateTime(x.checkedInAt)}</span><span className="badge info">{x.source}</span></div>
             ))}
-          </ul>
+          </div>
           <Pager page={r.rows.page} totalPages={r.rows.totalPages} onPage={setPage} />
         </>
       )}
@@ -67,16 +104,16 @@ function ExpiryTab({ params, setPage }: TabProps) {
     <QueryState q={q} isEmpty={(r) => r.totalMemberships === 0} empty={<Empty title="No memberships ending in this period" />}>
       {(r) => (
         <>
-          <p className="muted">{r.totalMemberships} memberships end between {formatDate(r.from)} and {formatDate(r.to)}</p>
-          <ul className="list">
+          <div className="insight-banner"><TrendingUp size={18} /><div><strong>{r.totalMemberships} memberships</strong><span> end between {formatDate(r.from)} and {formatDate(r.to)}</span></div></div>
+          <div className="report-table-card">
+            <div className="report-table-head"><span>Member</span><span>Plan</span><span>End date</span><span>Status</span></div>
             {r.rows.items.map((x) => (
-              <li key={`${x.memberId}-${x.endDate}`} className="row">
-                <div><Link to={`/members/${x.memberId}`}><strong>{x.memberName}</strong></Link> <span className="muted">{x.memberCode} · {x.phone}</span>
-                  <div className="muted">{x.planName} · ends {formatDate(x.endDate)}{x.renewed ? ' · renewed' : ''}</div></div>
-                <span className="badge info">{titleCase(x.status)}</span>
-              </li>
+              <div className="report-table-row expiry-row" key={`${x.memberId}-${x.endDate}`}>
+                <div><Link to={`/members/${x.memberId}`}><strong>{x.memberName}</strong></Link><small>{x.memberCode} · {x.phone}</small></div>
+                <span>{x.planName}</span><span>{formatDate(x.endDate)}</span><span className="badge info">{titleCase(x.status)}{x.renewed ? ' · renewed' : ''}</span>
+              </div>
             ))}
-          </ul>
+          </div>
           <Pager page={r.rows.page} totalPages={r.rows.totalPages} onPage={setPage} />
         </>
       )}
@@ -88,23 +125,43 @@ function CollectionsTab({ params, setPage }: TabProps) {
   const q = useQuery({ queryKey: ['rep-col', params], queryFn: () => get<Collections>('/api/v1/reports/collections' + qs(params)) });
   return (
     <QueryState q={q} isEmpty={(r) => r.paymentCount === 0 && r.voidedCount === 0} empty={<Empty title="No payments in this period" />}>
-      {(r) => (
-        <>
-          <p className="muted">{formatDate(r.from)} – {formatDate(r.to)} · the total equals the sum of the rows below; voided payments are excluded.</p>
-          <section className="stats">
-            <Stat label="Collected" value={formatMoney(r.totalPaise)} hint={`${r.paymentCount} payments`} />
-            {r.voidedCount > 0 && <Stat label="Voided" value={formatMoney(r.voidedPaise)} hint={`${r.voidedCount} payments`} />}
-            {r.byMethod.map((m) => <Stat key={m.method} label={titleCase(m.method)} value={formatMoney(m.paise)} hint={`${m.count} payments`} />)}
-          </section>
-          <ul className="list">
-            {r.rows.items.map((x) => (
-              <li key={x.paymentId} className="row"><div><strong>{x.memberName}</strong> <span className="muted">{x.memberCode}</span>
-                <div className="muted">{formatDateTime(x.paidAt)} · {titleCase(x.method)} · {x.receiptNo}</div></div><strong>{formatMoney(x.amountPaise)}</strong></li>
-            ))}
-          </ul>
-          <Pager page={r.rows.page} totalPages={r.rows.totalPages} onPage={setPage} />
-        </>
-      )}
+      {(r) => {
+        const total = r.byMethod.reduce((sum, x) => sum + x.paise, 0);
+        let cursor = 0;
+        const stops = r.byMethod.map((m) => {
+          const start = total ? (cursor / total) * 100 : 0;
+          cursor += m.paise;
+          return `${m.paise === 0 ? 'transparent' : 'var(--brand)'} ${start}% ${total ? (cursor / total) * 100 : 0}%`;
+        }).join(', ');
+        return (
+          <>
+            <section className="stats">
+              <Stat label="Collected" value={formatMoney(r.totalPaise)} hint={`${r.paymentCount} payments`} />
+              <Stat label="Voided" value={formatMoney(r.voidedPaise)} hint={`${r.voidedCount} payments`} />
+              {r.byMethod.slice(0, 2).map((m) => <Stat key={m.method} label={titleCase(m.method)} value={formatMoney(m.paise)} hint={`${m.count} payments`} />)}
+            </section>
+            <div className="chart-split">
+              <div className="chart-card donut-card">
+                <div className="chart-card-head"><div><span className="eyebrow">PAYMENT MIX</span><h3>Collections by method</h3></div></div>
+                <div className="donut-wrap"><div className="donut" style={{ background: total ? `conic-gradient(var(--brand) 0 ${(r.byMethod[0]?.paise ?? 0) / total * 360}deg, var(--cyan) ${(r.byMethod[0]?.paise ?? 0) / total * 360}deg 360deg)` : 'var(--surface-strong)' }}><div className="donut-hole"><strong>{formatMoney(r.totalPaise)}</strong><span>Total</span></div></div>
+                  <div className="donut-legend">{r.byMethod.map((m, i) => <div key={m.method}><span className={`legend-dot ${i % 2 ? 'cyan' : ''}`} /><span>{titleCase(m.method)}</span><strong>{formatMoney(m.paise)}</strong></div>)}</div>
+                </div>
+              </div>
+              <div className="chart-card">
+                <div className="chart-card-head"><div><span className="eyebrow">PERFORMANCE</span><h3>Collection summary</h3></div></div>
+                <div className="collection-summary"><div><strong>{r.paymentCount}</strong><span>recorded payments</span></div><div><strong>{r.voidedCount}</strong><span>voided payments</span></div><div><strong>{formatMoney(r.voidedPaise)}</strong><span>voided value</span></div></div>
+                <div className="progress-line"><span style={{ width: `${r.paymentCount + r.voidedCount ? (r.paymentCount / (r.paymentCount + r.voidedCount)) * 100 : 0}%` }} /></div>
+                <p className="muted small-print">Voided payments are excluded from collected totals.</p>
+              </div>
+            </div>
+            <div className="report-table-card">
+              <div className="report-table-head"><span>Member</span><span>Paid at</span><span>Method</span><span>Amount</span></div>
+              {r.rows.items.map((x) => <div className="report-table-row" key={x.paymentId}><div><strong>{x.memberName}</strong><small>{x.memberCode}</small></div><span>{formatDateTime(x.paidAt)}</span><span>{titleCase(x.method)}</span><strong>{formatMoney(x.amountPaise)}</strong></div>)}
+            </div>
+            <Pager page={r.rows.page} totalPages={r.rows.totalPages} onPage={setPage} />
+          </>
+        );
+      }}
     </QueryState>
   );
 }
@@ -115,13 +172,11 @@ function OutstandingTab({ params, setPage }: TabProps) {
     <QueryState q={q} isEmpty={(r) => r.memberCount === 0} empty={<Empty title="No outstanding dues" hint="Everyone is paid up." />}>
       {(r) => (
         <>
-          <section className="stats"><Stat label="Total outstanding" value={formatMoney(r.totalDuesPaise)} hint={`${r.memberCount} members`} /></section>
-          <ul className="list">
-            {r.rows.items.map((x) => (
-              <li key={x.memberId} className="row"><div><Link to={`/members/${x.memberId}`}><strong>{x.memberName}</strong></Link> <span className="muted">{x.memberCode} · {x.phone}</span>
-                <div className="muted">Billed {formatMoney(x.billedPaise)} · Paid {formatMoney(x.paidPaise)}</div></div><strong>{formatMoney(x.duesPaise)}</strong></li>
-            ))}
-          </ul>
+          <div className="outstanding-hero"><div><span className="eyebrow">OUTSTANDING</span><h2>{formatMoney(r.totalDuesPaise)}</h2><p className="muted">{r.memberCount} members currently have dues.</p></div><div className="outstanding-icon"><IndianRupee size={24} /></div></div>
+          <div className="report-table-card">
+            <div className="report-table-head"><span>Member</span><span>Billed</span><span>Paid</span><span>Due</span></div>
+            {r.rows.items.map((x) => <div className="report-table-row" key={x.memberId}><div><Link to={`/members/${x.memberId}`}><strong>{x.memberName}</strong></Link><small>{x.memberCode} · {x.phone}</small></div><span>{formatMoney(x.billedPaise)}</span><span>{formatMoney(x.paidPaise)}</span><strong className="due-value">{formatMoney(x.duesPaise)}</strong></div>)}
+          </div>
           <Pager page={r.rows.page} totalPages={r.rows.totalPages} onPage={setPage} />
         </>
       )}
