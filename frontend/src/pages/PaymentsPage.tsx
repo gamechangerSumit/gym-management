@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpRight, CreditCard, Download, IndianRupee, ReceiptText } from 'lucide-react';
+import { CreditCard, Download, IndianRupee, ReceiptText } from 'lucide-react';
 import { get, qs } from '../api/client';
 import type { Page, Payment } from '../api/types';
 import { formatDateTime, formatMoney, titleCase } from '../lib/format';
