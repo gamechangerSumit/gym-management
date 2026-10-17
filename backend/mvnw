@@ -1,0 +1,14 @@
+#!/bin/sh
+# Minimal Maven launcher: uses an installed `mvn`, otherwise downloads Apache Maven 3.9.9 once into ~/.m2/gym-maven.
+set -e
+if command -v mvn >/dev/null 2>&1; then exec mvn "$@"; fi
+VER=3.9.9
+DIR="${HOME}/.m2/gym-maven/apache-maven-${VER}"
+if [ ! -x "$DIR/bin/mvn" ]; then
+  mkdir -p "${HOME}/.m2/gym-maven"
+  TMP="$(mktemp)"
+  curl -fsSL "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${VER}/apache-maven-${VER}-bin.tar.gz" -o "$TMP"
+  tar -xzf "$TMP" -C "${HOME}/.m2/gym-maven"
+  rm -f "$TMP"
+fi
+exec "$DIR/bin/mvn" "$@"

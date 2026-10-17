@@ -1,0 +1,163 @@
+package app.gym.payment;
+
+import app.gym.audit.AuditService;
+import app.gym.auth.CurrentUser;
+import app.gym.common.ApiException;
+import app.gym.common.Db;
+import app.gym.common.Money;
+import app.gym.common.PageResponse;
+import app.gym.common.Paging;
+import app.gym.payment.DuesCalculator.Dues;
+import app.gym.payment.PaymentDtos.PaymentDto;
+import app.gym.payment.PaymentDtos.PaymentRequest;
+import app.gym.settings.GymClock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class PaymentService {
+
+    static final Set<String> METHODS = Set.of("CASH", "UPI", "CARD", "BANK_TRANSFER", "OTHER");
+
+    private static final String SELECT = "SELECT p.id, p.member_id, m.member_code, m.full_name, p.membership_id, "
+            + "p.amount_paise, p.paid_at, p.method, p.receipt_no, p.status, p.void_reason, p.voided_at, "
+            + "u.login_id AS recorded_by, p.note FROM payment p JOIN member_profile m ON m.id = p.member_id "
+            + "LEFT JOIN user_account u ON u.id = p.recorded_by ";
+
+    static final RowMapper<PaymentDto> MAPPER = (rs, i) -> new PaymentDto(rs.getLong("id"), rs.getLong("member_id"),
+            rs.getString("member_code"), rs.getString("full_name"), Db.longOrNull(rs, "membership_id"),
+            rs.getLong("amount_paise"), Db.instant(rs, "paid_at"), rs.getString("method"), rs.getString("receipt_no"),
+            rs.getString("status"), rs.getString("void_reason"), Db.instant(rs, "voided_at"),
+            rs.getString("recorded_by"), rs.getString("note"));
+
+    private final JdbcClient jdbc;
+    private final GymClock clock;
+    private final AuditService audit;
+    private final DuesService dues;
+
+    public PaymentService(JdbcClient jdbc, GymClock clock, AuditService audit, DuesService dues) {
+        this.jdbc = jdbc;
+        this.clock = clock;
+        this.audit = audit;
+        this.dues = dues;
+    }
+
+    public PaymentDto get(long id) {
+        return jdbc.sql(SELECT + "WHERE p.id = :id").param("id", id).query(MAPPER).optional()
+                .orElseThrow(() -> ApiException.notFound("Payment not found."));
+    }
+
+    public PageResponse<PaymentDto> search(Long memberId, LocalDate from, LocalDate to, String status, Paging paging) {
+        StringBuilder where = new StringBuilder(" WHERE 1=1");
+        Map<String, Object> params = new HashMap<>();
+        if (memberId != null) {
+            where.append(" AND p.member_id = :member");
+            params.put("member", memberId);
+        }
+        if (from != null) {
+            where.append(" AND p.paid_at >= :from");
+            params.put("from", Db.ts(clock.startOfDay(from)));
+        }
+        if (to != null) {
+            where.append(" AND p.paid_at < :to");
+            params.put("to", Db.ts(clock.startOfDay(to.plusDays(1))));
+        }
+        if (status != null && !status.isBlank()) {
+            if (!"RECORDED".equals(status) && !"VOID".equals(status)) {
+                throw ApiException.badRequest("INVALID_STATUS", "Status must be RECORDED or VOID.");
+            }
+            where.append(" AND p.status = :status");
+            params.put("status", status);
+        }
+        long total = jdbc.sql("SELECT count(*) FROM payment p" + where).params(params).query(Long.class).single();
+        Map<String, Object> listParams = new HashMap<>(params);
+        listParams.put("lim", paging.size());
+        listParams.put("off", paging.offset());
+        List<PaymentDto> items = jdbc.sql(SELECT + where + " ORDER BY p.paid_at DESC, p.id DESC LIMIT :lim OFFSET :off")
+                .params(listParams).query(MAPPER).list();
+        return PageResponse.of(items, paging.page(), paging.size(), total);
+    }
+
+    /**
+     * Records a payment in one transaction. The member row is locked so concurrent payments for the same member
+     * cannot both pass the overpayment check; the receipt number comes from a database sequence (unique by construction).
+     */
+    @Transactional
+    public PaymentDto record(PaymentRequest req) {
+        if (!METHODS.contains(req.method())) {
+            throw ApiException.badRequest("INVALID_METHOD", "Payment method must be one of " + METHODS + ".");
+        }
+        jdbc.sql("SELECT id FROM member_profile WHERE id = :id FOR UPDATE").param("id", req.memberId())
+                .query(Long.class).optional().orElseThrow(() -> ApiException.notFound("Member not found."));
+
+        if (req.membershipId() != null) {
+            boolean ok = Boolean.TRUE.equals(jdbc.sql("SELECT EXISTS (SELECT 1 FROM membership WHERE id = :ms "
+                            + "AND member_id = :m AND status <> 'CANCELLED')")
+                    .param("ms", req.membershipId()).param("m", req.memberId()).query(Boolean.class).single());
+            if (!ok) {
+                throw ApiException.badRequest("INVALID_MEMBERSHIP", "That membership does not belong to this member.");
+            }
+        }
+        Instant now = clock.now();
+        Instant paidAt = req.paidAt() != null ? req.paidAt() : now;
+        if (paidAt.isAfter(now.plus(Duration.ofMinutes(5)))) {
+            throw ApiException.badRequest("INVALID_DATE", "The payment date cannot be in the future.");
+        }
+        Dues current = dues.duesFor(req.memberId());
+        if (req.amountPaise() > current.duesPaise() && !Boolean.TRUE.equals(req.allowOverpayment())) {
+            throw ApiException.unprocessable("OVERPAYMENT", "This payment (" + Money.formatInr(req.amountPaise())
+                    + ") is more than the outstanding dues (" + Money.formatInr(Math.max(0, current.duesPaise()))
+                    + "). Reduce the amount, or confirm it is an advance payment.");
+        }
+        Map<String, Object> row = jdbc.sql("INSERT INTO payment (member_id, membership_id, amount_paise, paid_at, method, "
+                        + "receipt_no, recorded_by, note) VALUES (:m, :ms, :amt, :at, :method, "
+                        + "'RC-' || lpad(nextval('receipt_seq')::text, 6, '0'), :by, :note) RETURNING id, receipt_no")
+                .param("m", req.memberId())
+                .param("ms", req.membershipId())
+                .param("amt", req.amountPaise())
+                .param("at", Db.ts(paidAt))
+                .param("method", req.method())
+                .param("by", CurrentUser.idOrNull())
+                .param("note", req.note() == null || req.note().isBlank() ? null : req.note().trim())
+                .query().singleRow();
+        long id = ((Number) row.get("id")).longValue();
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("memberId", req.memberId());
+        details.put("amountPaise", req.amountPaise());
+        details.put("method", req.method());
+        details.put("receiptNo", row.get("receipt_no"));
+        audit.record("PAYMENT_RECORDED", "PAYMENT", id, details);
+        return get(id);
+    }
+
+    /** Payments are never deleted: voiding keeps the row, records who and why, and removes it from dues. */
+    @Transactional
+    public PaymentDto voidPayment(long id, String reason) {
+        PaymentDto payment = get(id);
+        if (!"RECORDED".equals(payment.status())) {
+            throw ApiException.conflict("ALREADY_VOID", "This payment has already been voided.");
+        }
+        jdbc.sql("SELECT id FROM member_profile WHERE id = :id FOR UPDATE").param("id", payment.memberId())
+                .query(Long.class).single();
+        jdbc.sql("UPDATE payment SET status = 'VOID', void_reason = :r, voided_by = :by, voided_at = now() "
+                        + "WHERE id = :id AND status = 'RECORDED'")
+                .param("r", reason.trim()).param("by", CurrentUser.idOrNull()).param("id", id).update();
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("memberId", payment.memberId());
+        details.put("amountPaise", payment.amountPaise());
+        details.put("receiptNo", payment.receiptNo());
+        details.put("reason", reason.trim());
+        audit.record("PAYMENT_VOIDED", "PAYMENT", id, details);
+        return get(id);
+    }
+}

@@ -1,0 +1,37 @@
+# Local / pilot stack over plain HTTP: http://localhost:8080
+#   cp .env.example .env  (set the empty values)  &&  docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gym}
+      POSTGRES_USER: ${POSTGRES_USER:-gym}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gym} -d ${POSTGRES_DB:-gym}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  backend:
+    build: ./backend
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-gym}
+      DB_USER: ${POSTGRES_USER:-gym}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://localhost:8080}
+      APP_QR_ENC_KEY: ${APP_QR_ENC_KEY:?set APP_QR_ENC_KEY in .env}
+      APP_BOOTSTRAP_OWNER_LOGIN: ${APP_BOOTSTRAP_OWNER_LOGIN:-owner}
+      APP_BOOTSTRAP_OWNER_PASSWORD: ${APP_BOOTSTRAP_OWNER_PASSWORD:?set APP_BOOTSTRAP_OWNER_PASSWORD in .env}
+      APP_COOKIE_SECURE: ${APP_COOKIE_SECURE:-false}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+    restart: unless-stopped
+  web:
+    build: ./frontend
+    depends_on: [backend]
+    ports: ["8080:80"]
+    restart: unless-stopped
+volumes:
+  pgdata:

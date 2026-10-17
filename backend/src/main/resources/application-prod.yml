@@ -1,0 +1,20 @@
+# Production profile (application-prod.yml): HTTPS behind nginx, no Swagger, no demo data.
+spring:
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+app:
+  cookie:
+    secure: true
+  cors:
+    allowed-origins: ""
+server:
+  forward-headers-strategy: framework
+logging:
+  level:
+    root: INFO

@@ -1,0 +1,10 @@
+# Production overlay: HTTPS on 443, DB and backend not exposed.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Requires deploy/certs/fullchain.pem and deploy/certs/privkey.pem (see docs/DEPLOYMENT.md), and in .env:
+#   APP_PUBLIC_BASE_URL=https://your.domain   APP_COOKIE_SECURE=true   SPRING_PROFILES_ACTIVE=prod
+services:
+  web:
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./deploy/nginx.tls.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro

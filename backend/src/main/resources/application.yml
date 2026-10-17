@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: gym-app
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/gym}
+    username: ${DB_USER:gym}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  session:
+    jdbc:
+      initialize-schema: never
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+    default-property-inclusion: non_null
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 8h
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:5173}
+  default-country-code: "91"
+  cookie:
+    secure: true
+  security:
+    bcrypt-strength: 12
+    max-failed-attempts: 5
+    lock-minutes: 15
+  rate-limit:
+    ip-capacity: 30
+    ip-window-minutes: 1
+    account-capacity: 10
+    account-window-minutes: 15
+  token:
+    invite-ttl-hours: 72
+    reset-ttl-hours: 2
+  qr:
+    # Base64 of 32 random bytes (openssl rand -base64 32). Required in prod.
+    encryption-key: ${APP_QR_ENC_KEY:}
+  bootstrap:
+    owner-login: ${APP_BOOTSTRAP_OWNER_LOGIN:owner}
+    owner-password: ${APP_BOOTSTRAP_OWNER_PASSWORD:}
+    owner-must-change-password: true
+  cors:
+    allowed-origins: ""
+  dashboard:
+    expired-lookback-days: 60

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Every message passes through the scrubber: passwords, tokens, secrets and auth headers are masked. -->
+    <conversionRule conversionWord="scrubbed" converterClass="app.gym.common.LogScrubbingConverter"/>
+
+    <!-- key=value structured line, easy to grep and to ship to a log collector. -->
+    <property name="LOG_PATTERN"
+              value="ts=%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC} level=%level logger=%logger{36} thread=%thread msg=&quot;%scrubbed&quot;%n%ex{short}"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

@@ -1,0 +1,9 @@
+# Local development: plain HTTP on localhost, Swagger UI enabled, CORS for the Vite dev server.
+app:
+  cookie:
+    secure: false
+  cors:
+    allowed-origins: http://localhost:5173
+logging:
+  level:
+    app.gym: DEBUG
