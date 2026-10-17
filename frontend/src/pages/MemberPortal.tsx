@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { Activity, CalendarCheck2, CreditCard, Download, ShieldCheck, UserRound, WalletCards } from 'lucide-react';
@@ -19,7 +19,7 @@ export function MyHomePage() {
           <>
             <div className="member-hero-card">
               <div><span className="eyebrow">CURRENT PLAN</span><h2>{m.planName}</h2><div className="member-status-line"><StatusBadge status={m.status}/><span>{m.daysRemaining !== null && m.daysRemaining >= 0 ? `${m.daysRemaining} days left` : 'Membership ended'}</span></div></div>
-              <div className="membership-ring" style={{'--progress': `${Math.max(0, Math.min(100, m.daysRemaining === null ? 0 : Math.min(100, m.daysRemaining / 30 * 100)))}%`} as React.CSSProperties}><strong>{m.daysRemaining ?? 0}</strong><span>days</span></div>
+              <div className="membership-ring" style={{'--progress': `${Math.max(0, Math.min(100, m.daysRemaining === null ? 0 : Math.min(100, m.daysRemaining / 30 * 100)))}%`} as CSSProperties}><strong>{m.daysRemaining ?? 0}</strong><span>days</span></div>
             </div>
             <div className="portal-stats"><Stat label="Visits this month" value={m.visitsThisMonth}/><Stat label="Dues" value={formatMoney(m.duesPaise)} hint={m.duesPaise > 0 ? 'Please pay at the front desk' : 'All paid up'}/><Stat label="Ends" value={formatDate(m.endDate)}/></div>
             <div className="portal-actions"><a className="btn primary" href="/me/qr"><Activity size={16}/> Show QR pass</a><a className="btn" href="/me/payments"><WalletCards size={16}/> View payments</a></div>
