@@ -13,14 +13,33 @@ function homeFor(role: string | null): string {
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="center-screen">
-      <div className="card narrow">
-        <DemoBanner />
-        <h1>{title}</h1>
-        {children}
+    <div className="auth-page">
+      <div className="auth-brand-panel">
+        <div className="auth-logo"><DumbbellIcon /></div>
+        <span className="auth-eyebrow">GYM MANAGEMENT</span>
+        <h1>Run your gym.<br /><em>Build stronger.</em></h1>
+        <p>One clean workspace for members, check-ins, memberships, payments and renewals.</p>
+        <div className="auth-feature"><span>01</span><strong>Fast check-ins</strong><small>QR and front-desk attendance in seconds.</small></div>
+        <div className="auth-feature"><span>02</span><strong>Member intelligence</strong><small>See renewals, dues and activity at a glance.</small></div>
+        <div className="auth-feature"><span>03</span><strong>Simple operations</strong><small>Less admin work. More time on the floor.</small></div>
+      </div>
+      <div className="auth-form-panel">
+        <div className="auth-form-card">
+          <DemoBanner />
+          <div className="auth-mobile-logo"><div className="auth-logo"><DumbbellIcon /></div><strong>Gym Management</strong></div>
+          <div className="auth-heading"><span>Welcome back</span><h2>{title}</h2></div>
+          {children}
+        </div>
+        <p className="auth-footer">Secure session-based access · Gym Management</p>
       </div>
     </div>
   );
+}
+
+function DumbbellIcon() {
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M3.5 12h17M6.5 8h11M6.5 16h11"/>
+  </svg>;
 }
 
 export function LoginPage() {

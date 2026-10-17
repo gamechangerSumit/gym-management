@@ -5,14 +5,8 @@ import jsQR from 'jsqr';
 import { get, post, qs } from '../api/client';
 import type { MemberSummary, Page, ScanResponse } from '../api/types';
 import { formatDate } from '../lib/format';
-import {
-  Empty,
-  ErrorBox,
-  FormError,
-  PageHeader,
-  Spinner,
-  useDebounced,
-} from '../components/ui';
+import { Empty, ErrorBox, FormError, PageHeader, Spinner, useDebounced } from '../components/ui';
+import { CheckCircle2, Keyboard, RefreshCw, ScanLine, XCircle } from 'lucide-react';
 
 const PREFIX = 'GYMPASS:';
 const RESULT_TIMEOUT = 2500;
@@ -33,13 +27,8 @@ function ResultCard({
       role="status"
       aria-live="polite"
     >
-      <p className="big">
-        {ok
-          ? '✓ Checked in'
-          : warn
-            ? 'Already checked in'
-            : 'Not allowed'}
-      </p>
+      <div className="scan-result-icon">{ok ? <CheckCircle2 size={28}/> : warn ? <RefreshCw size={28}/> : <XCircle size={28}/>}</div>
+      <p className="big">{ok ? 'Checked in' : warn ? 'Already checked in' : 'Not allowed'}</p>
 
       {r.memberName && (
         <p>
@@ -303,14 +292,15 @@ export function ScanPage() {
 
   return (
     <>
-      <PageHeader title="Check-in" />
+      <PageHeader title="Check-in" actions={<span className="scanner-status"><span /> Scanner ready</span>} />
+      <div className="scanner-hero"><div><span className="eyebrow">FRONT DESK SCANNER</span><h2>Fast, frictionless member entry.</h2><p className="muted">Scan a member QR pass or find them manually. The result appears instantly.</p></div><div className="scanner-hero-icon"><ScanLine size={26} /></div></div>
 
       {result && (
         <ResultCard r={result} onDismiss={dismissResult} />
       )}
 
       {/* Keep video mounted while the result card is displayed. */}
-      <div className="scanner">
+      <div className="scanner-shell"><div className="scanner">
         <video
           ref={videoRef}
           muted
@@ -347,9 +337,9 @@ export function ScanPage() {
         )}
 
         {scan.isError && <FormError error={scan.error} />}
-      </div>
+      </div></div>
 
-      <h2>Manual check-in</h2>
+      <div className="manual-checkin-head"><div><span className="eyebrow">FALLBACK</span><h2>Manual check-in</h2><p className="muted">Use this when a member does not have their QR pass.</p></div><Keyboard size={20}/></div>
 
       <ManualCheckin onResult={setResult} />
     </>
@@ -387,13 +377,13 @@ function ManualCheckin({
   });
 
   return (
-    <div>
-      <input
+    <div className="manual-checkin-card">
+      <div className="manual-search"><Keyboard size={17}/><input
         aria-label="Find member"
         placeholder="Search name, phone or member code"
         value={q}
         onChange={(event) => setQ(event.target.value)}
-      />
+      /></div>
 
       <FormError error={check.error} />
 

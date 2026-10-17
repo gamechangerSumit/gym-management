@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ArrowLeft, CreditCard, Edit3, KeyRound, QrCode, ShieldCheck } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
@@ -37,14 +38,11 @@ export function MemberDetailPage() {
     <QueryState q={member}>
       {(m) => (
         <>
-          <p><Link to="/members">← Members</Link></p>
-          <div className="page-head">
-            <div>
-              <h1>{m.fullName} {m.status === 'INACTIVE' && <StatusBadge status="INACTIVE" />}</h1>
-              <div className="muted">{m.memberCode} · {m.phone}{m.email ? ` · ${m.email}` : ''}</div>
-            </div>
+          <Link className="back-link" to="/members"><ArrowLeft size={15}/> Members</Link>
+          <div className="member-detail-head">
+            <div className="member-detail-title"><div className="detail-avatar">{m.fullName.split(" ").map((x) => x[0]).slice(0,2).join("").toUpperCase()}</div><div><h1>{m.fullName} {m.status === 'INACTIVE' && <StatusBadge status="INACTIVE" />}</h1><div className="muted">{m.memberCode} · {m.phone}{m.email ? ` · ${m.email}` : ""}</div></div></div>
             <div className="actions">
-              {can('canEditMembers') && <button className="btn" onClick={() => setEditing(true)}>Edit</button>}
+              {can('canEditMembers') && <button className="btn" onClick={() => setEditing(true)}><Edit3 size={15}/> Edit</button>}
               {can('canEditMembers') && (
                 <button className="btn ghost" disabled={toggle.isPending}
                   onClick={() => { if (m.status === 'ACTIVE' ? window.confirm('Deactivate this member? They will not be able to check in.') : true) toggle.mutate(m.status !== 'ACTIVE'); }}>
@@ -54,15 +52,14 @@ export function MemberDetailPage() {
             </div>
           </div>
           <FormError error={toggle.error} />
-          <section className="stats">
+          <section className="stats detail-stats">
             <Stat label="Membership" value={<StatusBadge status={m.membershipStatus} />} hint={m.planName ? `${m.planName} · ends ${formatDate(m.membershipEndDate)}` : undefined} />
             {m.duesPaise !== null && <Stat label="Dues" value={formatMoney(m.duesPaise)} />}
             <Stat label="Joined" value={formatDate(m.joinDate)} />
           </section>
 
           {isOwner && (
-            <div className="card">
-              <h2>Member login</h2>
+            <div className="detail-login-card"><div className="detail-login-icon"><KeyRound size={18}/></div><div><h2>Member login</h2>
               {m.hasAccount ? <p>Login ID <strong>{m.accountLoginId}</strong> · {titleCase(m.accountStatus)}</p> : <p className="muted">No login yet.</p>}
               {(!m.hasAccount || m.accountStatus === 'INVITED') && (
                 <button className="btn" disabled={invite.isPending} onClick={() => invite.mutate()}>
@@ -77,16 +74,16 @@ export function MemberDetailPage() {
                   <button className="btn small" onClick={() => void navigator.clipboard?.writeText(link.url)}>Copy</button>
                 </div>
               )}
-            </div>
+            </div></div>
           )}
 
-          <div className="btn-row">
-            {can('canManageMemberships') && m.status === 'ACTIVE' && <button className="btn primary" onClick={() => setDialog('assign')}>Assign membership</button>}
-            {can('canRecordPayments') && <button className="btn primary" onClick={() => setDialog('pay')}>Record payment</button>}
-            <button className="btn" onClick={() => setDialog('qr')}>QR pass</button>
+          <div className="detail-actions">
+            {can('canManageMemberships') && m.status === 'ACTIVE' && <button className="btn primary" onClick={() => setDialog('assign')}><ShieldCheck size={15}/> Assign membership</button>}
+            {can('canRecordPayments') && <button className="btn primary" onClick={() => setDialog('pay')}><CreditCard size={15}/> Record payment</button>}
+            <button className="btn" onClick={() => setDialog('qr')}><QrCode size={15}/> QR pass</button>
           </div>
 
-          {m.staffNotes && (<div className="card"><h2>Staff notes</h2><p style={{ whiteSpace: 'pre-wrap' }}>{m.staffNotes}</p></div>)}
+          {m.staffNotes && (<div className="card detail-notes"><h2>Staff notes</h2><p style={{ whiteSpace: 'pre-wrap' }}>{m.staffNotes}</p></div>)}
 
           <Memberships memberId={memberId} onChange={refresh} />
           {can('canRecordPayments') && <MemberPayments memberId={memberId} onChange={refresh} />}
