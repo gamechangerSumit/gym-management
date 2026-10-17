@@ -127,12 +127,6 @@ function CollectionsTab({ params, setPage }: TabProps) {
     <QueryState q={q} isEmpty={(r) => r.paymentCount === 0 && r.voidedCount === 0} empty={<Empty title="No payments in this period" />}>
       {(r) => {
         const total = r.byMethod.reduce((sum, x) => sum + x.paise, 0);
-        let cursor = 0;
-        const stops = r.byMethod.map((m) => {
-          const start = total ? (cursor / total) * 100 : 0;
-          cursor += m.paise;
-          return `${m.paise === 0 ? 'transparent' : 'var(--brand)'} ${start}% ${total ? (cursor / total) * 100 : 0}%`;
-        }).join(', ');
         return (
           <>
             <section className="stats">
