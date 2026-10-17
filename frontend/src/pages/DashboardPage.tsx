@@ -5,6 +5,7 @@ import type { ActionList, DashboardSummary, HealthScore, Leakage } from '../api/
 import { useAuth } from '../auth/AuthContext';
 import { formatMoney, formatDate, titleCase } from '../lib/format';
 import { Empty, ErrorBox, PageHeader, QueryState, Spinner, Stat } from '../components/ui';
+import { ArrowUpRight, CalendarCheck2, CreditCard, UserPlus, Users } from 'lucide-react';
 
 const TYPE_LABEL: Record<string, string> = {
   EXPIRING: 'Expiring soon', EXPIRED: 'Recently expired', OVERDUE_DUES: 'Dues outstanding', NO_RECENT_VISIT: 'Stopped visiting',
@@ -16,7 +17,13 @@ export function DashboardPage() {
   const actions = useQuery({ queryKey: ['dash-actions'], queryFn: () => get<ActionList>('/api/v1/dashboard/action-list') });
   return (
     <>
-      <PageHeader title="Dashboard" />
+      <PageHeader title="Dashboard" actions={
+        <div className="actions">
+          <Link className="btn" to="/attendance"><CalendarCheck2 size={16} /> Attendance</Link>
+          <Link className="btn" to="/members"><Users size={16} /> Members</Link>
+          {isOwner && <Link className="btn primary" to="/payments"><CreditCard size={16} /> Payments</Link>}
+        </div>
+      } />
       <QueryState q={summary}>
         {(s) => (
           <section className="stats">
@@ -32,6 +39,10 @@ export function DashboardPage() {
         )}
       </QueryState>
 
+      <div className="dashboard-welcome">
+        <div><span className="eyebrow">TODAY AT A GLANCE</span><h2>Keep the floor moving.</h2><p className="muted">Focus on the members and tasks that need attention today.</p></div>
+        <Link className="quick-action" to="/members"><span><UserPlus size={18} /></span><div><strong>Add member</strong><small>Grow your member base</small></div><ArrowUpRight size={17} /></Link>
+      </div>
       <h2>Who needs attention</h2>
       <QueryState q={actions} isEmpty={(a) => a.items.length === 0}
         empty={<Empty title="All clear" hint="No members need follow-up right now." />}>
