@@ -74,6 +74,7 @@ export interface AddOn {
   stockOnHand: number | null;
   sessionsIncluded: number | null;
   active: boolean;
+  imageData: string | null;
 }
 
 export interface AddOnOrder {
