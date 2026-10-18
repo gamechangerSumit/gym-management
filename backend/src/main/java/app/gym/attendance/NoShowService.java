@@ -21,7 +21,7 @@ public class NoShowService {
     @Transactional
     public int scan(int threshold) {
         if (threshold < 1 || threshold > 365) {
-            throw ApiException.badRequest("Threshold must be between 1 and 365 days.");
+            throw ApiException.badRequest("INVALID_THRESHOLD", "Threshold must be between 1 and 365 days.");
         }
         // Only active members with a currently valid, non-held membership qualify.
         // The unique partial index makes the daily job safe to run more than once.
@@ -76,10 +76,10 @@ public class NoShowService {
     public void recordOutcome(long caseId, OutcomeRequest request) {
         if (request == null || request.outcome() == null ||
             !List.of("WILL_RETURN", "INJURED", "TRAVELLING", "TIMING_ISSUE", "UNHAPPY", "NO_RESPONSE", "CANCELLED").contains(request.outcome())) {
-            throw ApiException.badRequest("Choose a valid follow-up outcome.");
+            throw ApiException.badRequest("INVALID_OUTCOME", "Choose a valid follow-up outcome.");
         }
         if (request.note() != null && request.note().length() > 500) {
-            throw ApiException.badRequest("Note must be 500 characters or fewer.");
+            throw ApiException.badRequest("NOTE_TOO_LONG", "Note must be 500 characters or fewer.");
         }
         int updated = jdbc.sql("""
             UPDATE no_show_case SET outcome = :outcome, next_action_date = :nextAction,
