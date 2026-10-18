@@ -58,6 +58,37 @@ export interface MemberDetail {
   duesPaise: number | null;
 }
 
+export interface AddOn {
+  id: number;
+  kind: 'PT' | 'DIET' | 'PRODUCT';
+  name: string;
+  description: string | null;
+  pricePaise: number;
+  validityDays: number | null;
+  stockOnHand: number | null;
+  sessionsIncluded: number | null;
+  active: boolean;
+}
+
+export interface AddOnOrder {
+  id: number;
+  memberId: number;
+  memberCode: string;
+  memberName: string;
+  addonId: number;
+  addonName: string;
+  kind: 'PT' | 'DIET' | 'PRODUCT';
+  quantity: number;
+  unitPricePaise: number;
+  totalPaise: number;
+  sessionsIncluded: number | null;
+  sessionsUsed: number;
+  status: string;
+  createdAt: string;
+  paidAt: string | null;
+  fulfilledAt: string | null;
+}
+
 export interface Plan {
   id: number;
   name: string;
