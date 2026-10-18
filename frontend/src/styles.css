@@ -633,3 +633,9 @@ ul { padding-left: 1.2rem; }
 .addon-order-controls .btn { white-space:nowrap; }
 @media(max-width:900px){.addon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.addon-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.addon-grid,.addon-form{grid-template-columns:1fr}.addon-description{grid-column:auto}.addon-order-card{grid-template-columns:1fr}.addon-order-total{align-items:flex-start}.addon-order-controls{display:grid;grid-template-columns:1fr 1fr}.addon-order-controls label{width:auto;grid-column:1/-1}.addon-order-controls .btn{width:100%}}
+
+
+/* Renewal order and member checkout */
+.renewal-current { display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem; }
+.renewal-current strong { font-size:.9rem; }
+.addon-tile.selected { border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft); }
