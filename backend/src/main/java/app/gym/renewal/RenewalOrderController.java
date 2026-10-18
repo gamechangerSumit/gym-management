@@ -19,6 +19,11 @@ public class RenewalOrderController {
     @PreAuthorize("@perm.member()")
     public List<RenewalOrderService.RenewalPlan> options(){return service.availablePlans();}
 
+    @PostMapping("/memberships/{id}/renewal-order")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@perm.manageMemberships()")
+    public RenewalOrder createFromMembership(@PathVariable long id){return service.createFromMembership(id);}
+
     @PostMapping("/me/renewal-orders")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@perm.member()")
