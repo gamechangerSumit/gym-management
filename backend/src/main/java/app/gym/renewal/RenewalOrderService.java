@@ -47,6 +47,9 @@ public class RenewalOrderService {
             .orElseThrow(()->ApiException.notFound("Renewable membership not found."));
         long memberId=jdbc.sql("SELECT member_id FROM membership WHERE id=:id")
             .param("id",membershipId).query(Long.class).single();
+        long latest=jdbc.sql("SELECT id FROM membership WHERE member_id=:member AND status<>'CANCELLED' ORDER BY end_date DESC,id DESC LIMIT 1")
+            .param("member",memberId).query(Long.class).single();
+        if(latest!=membershipId)throw ApiException.conflict("NOT_LATEST_MEMBERSHIP","Only the latest membership can be renewed.");
         return create(memberId,req);
     }
 
