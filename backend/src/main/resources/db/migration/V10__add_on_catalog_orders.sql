@@ -40,7 +40,7 @@ CREATE INDEX addon_order_member_idx ON addon_order(member_id, created_at DESC);
 CREATE INDEX addon_order_status_idx ON addon_order(gym_id, status, created_at DESC);
 
 ALTER TABLE payment ADD COLUMN addon_order_id BIGINT REFERENCES addon_order(id);
-CREATE UNIQUE INDEX payment_addon_order_uq ON payment(addon_order_id) WHERE addon_order_id IS NOT NULL;
+CREATE UNIQUE INDEX payment_addon_order_uq ON payment(addon_order_id) WHERE addon_order_id IS NOT NULL AND status='RECORDED';
 
 -- Add-on payments are revenue, but must not reduce membership dues.
 CREATE OR REPLACE VIEW member_dues_v AS
