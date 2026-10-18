@@ -1,5 +1,9 @@
 package app.gym.portal;
 
+import app.gym.attendance.AttendanceService;
+import app.gym.attendance.AttendanceDtos.ScanRequest;
+import app.gym.attendance.AttendanceDtos.ScanResponse;
+import app.gym.attendance.GymCheckInQrService;
 import app.gym.common.PageResponse;
 import app.gym.common.Paging;
 import app.gym.payment.PaymentDtos.ReceiptDto;
@@ -28,9 +32,20 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeController {
 
     private final MePortalService me;
+    private final GymCheckInQrService gymQr;
+    private final AttendanceService attendance;
 
-    public MeController(MePortalService me) {
+    public MeController(MePortalService me, GymCheckInQrService gymQr, AttendanceService attendance) {
         this.me = me;
+        this.gymQr = gymQr;
+        this.attendance = attendance;
+    }
+
+    /** A member can only check in their own session-linked profile. */
+    @PostMapping("/check-in")
+    public ScanResponse checkIn(@Valid @RequestBody ScanRequest req) {
+        gymQr.validate(req.token());
+        return attendance.checkInFromGymQr(me.memberId());
     }
 
     @GetMapping

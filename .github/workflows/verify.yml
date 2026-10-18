@@ -1,6 +1,7 @@
 name: Verify Gym App
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -11,6 +12,7 @@ on:
       - main
       - frontend/premium-redesign
       - feature/retention-blueprint
+      - "fix/**"
 
 permissions:
   contents: read
