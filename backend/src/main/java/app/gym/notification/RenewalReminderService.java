@@ -83,6 +83,6 @@ public class RenewalReminderService {
             .param("at",Db.ts(clock.now())).param("id",id).update();
         if(changed==0)throw ApiException.conflict("REMINDER_NOT_QUEUED","Reminder is no longer queued.");
         audit.record("RENEWAL_REMINDER_MARKED_SENT","NOTIFICATION",id,
-            java.util.Map.of("actorId",CurrentUser.idOrNull()==null?0:CurrentUser.idOrNull()));
+            java.util.Map.<String,Object>of("actorId",CurrentUser.idOrNull()==null?0:CurrentUser.idOrNull()));
     }
 }
