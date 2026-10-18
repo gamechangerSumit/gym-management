@@ -99,6 +99,7 @@ export interface Payment {
   voidedAt: string | null;
   recordedBy: string | null;
   note: string | null;
+  addonOrderId: number | null;
 }
 
 export interface Dues {
