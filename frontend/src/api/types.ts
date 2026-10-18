@@ -302,6 +302,8 @@ export interface MeProfile {
   joinDate: string;
   emergencyContact: string | null;
   status: string;
+  transactionalMessagesEnabled: boolean;
+  marketingConsent: boolean;
   canEditEmail: boolean;
 }
 
