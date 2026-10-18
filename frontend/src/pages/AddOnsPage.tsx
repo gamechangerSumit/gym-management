@@ -5,7 +5,7 @@ import { get, post } from '../api/client';
 import type { AddOn, AddOnOrder } from '../api/types';
 import { formatDateTime, formatMoney, titleCase } from '../lib/format';
 import { useAuth } from '../auth/AuthContext';
-import { Empty, Field, FormError, PageHeader, QueryState, StatusBadge } from '../components/ui';
+import { Empty, FormError, PageHeader, QueryState, StatusBadge } from '../components/ui';
 
 const KINDS = ['PT', 'DIET', 'PRODUCT'] as const;
 const METHODS = ['CASH', 'UPI', 'CARD', 'BANK_TRANSFER', 'OTHER'];
