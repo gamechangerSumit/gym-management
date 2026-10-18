@@ -139,8 +139,8 @@ public class PaymentService {
                     + "). Reduce the amount, or confirm it is an advance payment.");
         }
         Map<String, Object> row = jdbc.sql("INSERT INTO payment (member_id, membership_id, amount_paise, paid_at, method, "
-                        + "receipt_no, recorded_by, note) VALUES (:m, :ms, :amt, :at, :method, "
-                        + "'RC-' || lpad(nextval('receipt_seq')::text, 6, '0'), :by, :note) RETURNING id, receipt_no")
+                        + "receipt_no, recorded_by, note, addon_order_id) VALUES (:m, :ms, :amt, :at, :method, "
+                        + "'RC-' || lpad(nextval('receipt_seq')::text, 6, '0'), :by, :note, :addonOrder) RETURNING id, receipt_no")
                 .param("m", req.memberId())
                 .param("ms", req.membershipId())
                 .param("amt", req.amountPaise())
@@ -152,8 +152,9 @@ public class PaymentService {
                 .query().singleRow();
         long id = ((Number) row.get("id")).longValue();
         if (req.addonOrderId() != null) {
-            jdbc.sql("UPDATE addon_order SET status='PAID', paid_at=:paidAt, updated_at=now() WHERE id=:id AND status='PAYMENT_PENDING'")
+            int paidOrder = jdbc.sql("UPDATE addon_order SET status='PAID', paid_at=:paidAt, updated_at=now() WHERE id=:id AND status='PAYMENT_PENDING'")
                     .param("paidAt", Db.ts(paidAt)).param("id", req.addonOrderId()).update();
+            if (paidOrder != 1) throw ApiException.conflict("ADDON_NOT_PAYABLE", "This add-on order is no longer awaiting payment.");
         }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("memberId", req.memberId());
