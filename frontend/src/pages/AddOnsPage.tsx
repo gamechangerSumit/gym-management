@@ -26,6 +26,8 @@ export function AddOnsPage() {
   const [validity, setValidity] = useState('');
   const [stock, setStock] = useState('10');
   const [sessions, setSessions] = useState('8');
+  const [imageData, setImageData] = useState<string>('');
+  const [imageError, setImageError] = useState<string>();
   const [createError, setCreateError] = useState<string>();
   const [paymentMethods, setPaymentMethods] = useState<Record<number,string>>({});
   const [payingOrder, setPayingOrder] = useState<number|null>(null);
@@ -35,9 +37,9 @@ export function AddOnsPage() {
     mutationFn:()=>post<AddOn>('/api/v1/addons',{
       kind,name:name.trim(),description:description.trim()||null,pricePaise:Math.round(Number(price)*100),
       validityDays:validity===''?null:Number(validity),stockOnHand:kind==='PRODUCT'?Number(stock):null,
-      sessionsIncluded:kind==='PT'?Number(sessions):null,active:true
+      sessionsIncluded:kind==='PT'?Number(sessions):null,active:true,imageData:imageData||null
     }),
-    onSuccess:()=>{setName('');setDescription('');setPrice('');setValidity('');setCreateError(undefined);void qc.invalidateQueries({queryKey:['addons']});},
+    onSuccess:()=>{setName('');setDescription('');setPrice('');setValidity('');setImageData('');setImageError(undefined);setCreateError(undefined);void qc.invalidateQueries({queryKey:['addons']});},
   });
   const recordPayment = useMutation({
     mutationFn:(o:AddOnOrder)=>post('/api/v1/payments',{
@@ -70,6 +72,9 @@ export function AddOnsPage() {
         {kind==='PRODUCT'&&<label>Stock on hand<input type="number" min="0" step="1" value={stock} onChange={e=>setStock(e.target.value)}/></label>}
         {kind==='PT'&&<label>Included sessions<input type="number" min="1" max="500" step="1" value={sessions} onChange={e=>setSessions(e.target.value)}/></label>}
         <label className="addon-description">Description<input value={description} maxLength={500} onChange={e=>setDescription(e.target.value)} placeholder="What's included, terms and exclusions"/></label>
+        <label className="addon-description">Product image (optional, JPG/PNG/WebP, max 2 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>{const file=e.target.files?.[0];setImageError(undefined);if(!file){setImageData('');return;}if(file.size>2*1024*1024){setImageError('Choose an image smaller than 2 MB.');e.currentTarget.value='';return;}if(!['image/png','image/jpeg','image/webp'].includes(file.type)){setImageError('Choose a JPG, PNG or WebP image.');e.currentTarget.value='';return;}const reader=new FileReader();reader.onload=()=>setImageData(String(reader.result??''));reader.onerror=()=>setImageError('Could not read this image. Try another file.');reader.readAsDataURL(file);}}/></label>
+        {imageData&&<img className="addon-product-image-preview" src={imageData} alt="Product preview"/>}
+        {imageError&&<p className="field-error">{imageError}</p>}
         <FormError error={create.error}/>{createError&&<p className="field-error">{createError}</p>}
         <button className="btn primary" disabled={create.isPending}><Plus size={15}/> {create.isPending?'Saving…':'Add item'}</button>
       </form>
@@ -77,7 +82,7 @@ export function AddOnsPage() {
     <section className="panel">
       <div className="section-heading"><div><span className="eyebrow">CATALOGUE</span><h2>Available add-ons</h2></div></div>
       <QueryState q={catalog} isEmpty={(a)=>a.length===0} empty={<Empty title="No add-ons yet" hint={isOwner?'Create PT, diet or product items above.':'Ask the owner to publish available add-ons.'}/>}>
-        {(items)=><div className="addon-grid">{items.map(a=><article className="addon-tile" key={a.id}><div className="addon-icon">{kindIcon(a.kind)}</div><div className="addon-title"><strong>{a.name}</strong><span className="badge info">{titleCase(a.kind)}</span></div><p>{a.description||'Ask the front desk for details and terms.'}</p><strong className="addon-price">{formatMoney(a.pricePaise)}</strong><small>{a.validityDays?a.validityDays+' days validity · ':''}{a.kind==='PRODUCT'?(a.stockOnHand??0)+' in stock':a.kind==='PT'?(a.sessionsIncluded+' sessions'):'Digital/service add-on'}</small></article>)}</div>}
+        {(items)=><div className="addon-grid">{items.map(a=><article className="addon-tile" key={a.id}>{a.imageData?<img className="addon-product-image" src={a.imageData} alt={a.name}/>:<div className="addon-icon">{kindIcon(a.kind)}</div>}<div className="addon-title"><strong>{a.name}</strong><span className="badge info">{titleCase(a.kind)}</span></div><p>{a.description||'Ask the front desk for details and terms.'}</p><strong className="addon-price">{formatMoney(a.pricePaise)}</strong><small>{a.validityDays?a.validityDays+' days validity · ':''}{a.kind==='PRODUCT'?(a.stockOnHand??0)+' in stock':a.kind==='PT'?(a.sessionsIncluded+' sessions'):'Digital/service add-on'}</small></article>)}</div>}
       </QueryState>
     </section>
     <section className="panel">
