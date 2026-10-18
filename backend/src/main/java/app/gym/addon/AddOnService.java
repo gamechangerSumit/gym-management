@@ -129,6 +129,8 @@ public class AddOnService {
             }).optional()
             .orElseThrow(() -> ApiException.notFound("Active add-on not found."));
         String kind = (String) addon.get("kind");
+        if (!"PRODUCT".equals(kind) && req.quantity() != 1)
+            throw ApiException.badRequest("INVALID_SERVICE_QUANTITY", "Services and PT packages must be ordered one at a time.");
         long unitPrice = ((Number) addon.get("price_paise")).longValue();
         long total = Math.multiplyExact(unitPrice, req.quantity().longValue());
         if (total > 10_000_000_000L)
