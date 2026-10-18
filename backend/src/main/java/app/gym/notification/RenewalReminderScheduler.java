@@ -7,8 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Component
+@ConditionalOnProperty(name = "app.automation.enabled", havingValue = "true", matchIfMissing = true)
 public class RenewalReminderScheduler {
     private static final Logger log=LoggerFactory.getLogger(RenewalReminderScheduler.class);
     private final RenewalReminderService reminders;
