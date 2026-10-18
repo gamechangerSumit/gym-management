@@ -639,3 +639,10 @@ ul { padding-left: 1.2rem; }
 .renewal-current { display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem; }
 .renewal-current strong { font-size:.9rem; }
 .addon-tile.selected { border-color:var(--brand);box-shadow:0 0 0 2px var(--brand-soft); }
+
+
+/* Renewal reminder queue */
+.reminder-message { padding:.75rem;border:1px solid var(--line);border-radius:11px;background:var(--surface-soft); }
+.reminder-message p { margin:0 0 .35rem;font-size:.75rem;line-height:1.5; }
+.reminder-message small { color:var(--muted);font-size:.62rem; }
+.reminder-card .recovery-actions { justify-content:flex-end; }
