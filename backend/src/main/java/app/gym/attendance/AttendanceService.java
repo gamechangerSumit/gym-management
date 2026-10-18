@@ -59,6 +59,11 @@ public class AttendanceService {
         this.noShows = noShows;
     }
 
+    public AttendanceService(JdbcClient jdbc, GymClock clock, GymSettingsService settings,
+                             QrPassService passes, MemberService members) {
+        this(jdbc, clock, settings, passes, members, null);
+    }
+
     /**
      * Validation order:
      * authenticated staff/owner (security layer)
@@ -227,7 +232,7 @@ public class AttendanceService {
                 .update();
 
         // A valid return visit closes the open risk case while preserving its history.
-        noShows.resolveOnReturn(memberId);
+        if (noShows != null) noShows.resolveOnReturn(memberId);
 
         return withMember(
                 ScanResult.CHECKED_IN,
