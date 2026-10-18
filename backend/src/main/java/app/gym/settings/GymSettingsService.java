@@ -22,7 +22,13 @@ public class GymSettingsService {
             @Min(0) @Max(1440) int duplicateWindowMinutes,
             @Min(1) @Max(365) int dropOffDays,
             @Min(0) @Max(90) int expiringSoonDays,
-            boolean memberCanEditEmail) {}
+            @Min(1) @Max(14) int weeklyVisitGoal,
+            boolean memberCanEditEmail) {
+        public UpdateSettingsRequest(String gymName, String timezone, int duplicateWindowMinutes, int dropOffDays,
+                                     int expiringSoonDays, boolean memberCanEditEmail) {
+            this(gymName, timezone, duplicateWindowMinutes, dropOffDays, expiringSoonDays, 3, memberCanEditEmail);
+        }
+    }
 
     private final JdbcClient jdbc;
     private final AuditService audit;
@@ -34,10 +40,10 @@ public class GymSettingsService {
 
     public GymSettings get() {
         return jdbc.sql("SELECT g.name, s.timezone, s.duplicate_window_minutes, s.drop_off_days, "
-                        + "s.expiring_soon_days, s.member_can_edit_email FROM gym g "
+                        + "s.expiring_soon_days, s.weekly_visit_goal, s.member_can_edit_email FROM gym g "
                         + "JOIN gym_settings s ON s.gym_id = g.id WHERE g.id = 1")
                 .query((rs, i) -> new GymSettings(rs.getString(1), ZoneId.of(rs.getString(2)), rs.getInt(3),
-                        rs.getInt(4), rs.getInt(5), rs.getBoolean(6)))
+                        rs.getInt(4), rs.getInt(5), rs.getInt(6), rs.getBoolean(7)))
                 .single();
     }
 
@@ -52,11 +58,12 @@ public class GymSettingsService {
         GymSettings before = get();
         jdbc.sql("UPDATE gym SET name = :n WHERE id = 1").param("n", req.gymName().trim()).update();
         jdbc.sql("UPDATE gym_settings SET timezone = :tz, duplicate_window_minutes = :dw, drop_off_days = :dd, "
-                        + "expiring_soon_days = :es, member_can_edit_email = :me, updated_at = now() WHERE gym_id = 1")
+                        + "expiring_soon_days = :es, weekly_visit_goal = :wg, member_can_edit_email = :me, updated_at = now() WHERE gym_id = 1")
                 .param("tz", zone.getId())
                 .param("dw", req.duplicateWindowMinutes())
                 .param("dd", req.dropOffDays())
                 .param("es", req.expiringSoonDays())
+                .param("wg", req.weeklyVisitGoal())
                 .param("me", req.memberCanEditEmail())
                 .update();
         Map<String, Object> details = new LinkedHashMap<>();
@@ -74,6 +81,7 @@ public class GymSettingsService {
         m.put("duplicateWindowMinutes", s.duplicateWindowMinutes());
         m.put("dropOffDays", s.dropOffDays());
         m.put("expiringSoonDays", s.expiringSoonDays());
+        m.put("weeklyVisitGoal", s.weeklyVisitGoal());
         m.put("memberCanEditEmail", s.memberCanEditEmail());
         return m;
     }
