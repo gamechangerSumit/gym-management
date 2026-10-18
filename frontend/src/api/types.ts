@@ -207,6 +207,7 @@ export interface DashboardSummary {
   membersReturned7d: number;
   renewalsDue7d: number;
   renewalCollectedMonthPaise: number;
+  addonRevenueMonthPaise: number;
 }
 
 export interface ActionItem {
