@@ -16,6 +16,8 @@ public class NoShowService {
             String planName, LocalDate membershipEnd, LocalDate lastVisit, int absentDays,
             String outcome, LocalDate nextActionDate) {}
     public record OutcomeRequest(String outcome, String note, LocalDate nextActionDate) {}
+    public record FollowupEvent(long id, String outcome, String note, LocalDate nextActionDate,
+                                String recordedBy, java.time.Instant createdAt) {}
 
     private final JdbcClient jdbc;
     private final GymClock clock;
@@ -28,20 +30,33 @@ public class NoShowService {
         }
         // Only active members with a currently valid, non-held membership qualify.
         // The unique partial index makes the daily job safe to run more than once.
+        jdbc.sql("""
+            UPDATE no_show_case c
+            SET status = 'CANCELLED', resolved_at = now(), updated_at = now()
+            FROM member_profile m
+            WHERE c.member_id = m.id AND c.status = 'OPEN'
+              AND (m.status <> 'ACTIVE' OR NOT EXISTS (
+                  SELECT 1 FROM membership ms
+                  WHERE ms.member_id = m.id AND ms.status = 'ACTIVE'
+                    AND ms.start_date <= :today AND ms.end_date >= :today
+              ))
+            """).param("today", clock.today()).update();
+
         return jdbc.sql("""
             INSERT INTO no_show_case (gym_id, member_id, last_attendance_at, absent_days)
             SELECT m.gym_id, m.id, latest.last_visit,
                    GREATEST(0, (:today - COALESCE(latest.last_visit::date, m.join_date)))
             FROM member_profile m
-            JOIN membership ms ON ms.member_id = m.id
-                AND ms.status = 'ACTIVE'
-                AND ms.start_date <= :today
-                AND ms.end_date >= :today
             LEFT JOIN LATERAL (
                 SELECT MAX(a.checked_in_at) AS last_visit
                 FROM attendance_record a WHERE a.member_id = m.id
             ) latest ON TRUE
             WHERE m.status = 'ACTIVE'
+              AND EXISTS (
+                  SELECT 1 FROM membership ms
+                  WHERE ms.member_id = m.id AND ms.status = 'ACTIVE'
+                    AND ms.start_date <= :today AND ms.end_date >= :today
+              )
               AND (:today - COALESCE(latest.last_visit::date, m.join_date)) >= :threshold
             ON CONFLICT (member_id) WHERE status = 'OPEN'
             DO UPDATE SET last_attendance_at = EXCLUDED.last_attendance_at,
@@ -72,6 +87,23 @@ public class NoShowService {
                 rs.getObject("membership_end", LocalDate.class), rs.getObject("last_visit", LocalDate.class),
                 rs.getInt("absent_days"), rs.getString("outcome"),
                 rs.getObject("next_action_date", LocalDate.class)
+            )).list();
+    }
+
+    public List<FollowupEvent> history(long caseId) {
+        boolean exists = Boolean.TRUE.equals(jdbc.sql(
+                "SELECT EXISTS (SELECT 1 FROM no_show_case WHERE id = :id)")
+            .param("id", caseId).query(Boolean.class).single());
+        if (!exists) throw ApiException.notFound("No-show case not found.");
+        return jdbc.sql("""
+            SELECT e.id, e.outcome, e.note, e.next_action_date, u.login_id AS recorded_by, e.created_at
+            FROM no_show_followup_event e
+            LEFT JOIN user_account u ON u.id = e.recorded_by
+            WHERE e.case_id = :id ORDER BY e.created_at DESC, e.id DESC
+            """).param("id", caseId).query((rs, row) -> new FollowupEvent(
+                rs.getLong("id"), rs.getString("outcome"), rs.getString("note"),
+                rs.getObject("next_action_date", LocalDate.class), rs.getString("recorded_by"),
+                rs.getTimestamp("created_at").toInstant()
             )).list();
     }
 
