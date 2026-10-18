@@ -16,6 +16,7 @@ export function MemberCheckInPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const lockedRef = useRef(false);
   const [active, setActive] = useState(true);
+  const [cameraAttempt, setCameraAttempt] = useState(0);
   const [cameraMessage, setCameraMessage] = useState('Starting your camera…');
   const [cameraError, setCameraError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,7 +101,7 @@ export function MemberCheckInPage() {
       window.cancelAnimationFrame(raf);
       stop();
     };
-  }, [active, result, requestError, qc]);
+  }, [active, result, requestError, qc, cameraAttempt]);
 
   const restart = () => {
     lockedRef.current = false;
@@ -108,6 +109,7 @@ export function MemberCheckInPage() {
     setRequestError('');
     setCameraError('');
     setActive(true);
+    setCameraAttempt(v => v + 1);
   };
 
   return <>
