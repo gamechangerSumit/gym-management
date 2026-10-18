@@ -137,7 +137,12 @@ public class RenewalOrderService {
     @Transactional
     public long completePayment(long orderId,long paymentId){
         Map<String,Object> o=jdbc.sql("SELECT member_id,source_membership_id,plan_id,price_paise,status FROM renewal_order WHERE id=:id FOR UPDATE")
-            .param("id",orderId).query().optional().orElseThrow(()->ApiException.notFound("Renewal order not found."));
+            .param("id",orderId).query((rs,row) -> {
+                Map<String,Object> item = new java.util.HashMap<>();
+                item.put("member_id",rs.getLong("member_id")); item.put("source_membership_id",rs.getLong("source_membership_id"));
+                item.put("plan_id",rs.getLong("plan_id")); item.put("price_paise",rs.getLong("price_paise"));
+                item.put("status",rs.getString("status")); return item;
+            }).optional().orElseThrow(()->ApiException.notFound("Renewal order not found."));
         if(!"PAYMENT_PENDING".equals(o.get("status")))throw ApiException.conflict("RENEWAL_NOT_PAYABLE","Renewal order is no longer awaiting payment.");
         MembershipDto renewed=memberships.renew(((Number)o.get("source_membership_id")).longValue(),
             new RenewRequest(((Number)o.get("plan_id")).longValue(),null,((Number)o.get("price_paise")).longValue()));
