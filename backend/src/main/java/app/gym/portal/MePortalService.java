@@ -166,8 +166,29 @@ public class MePortalService {
                         Db.date(rs, "checkin_date"), rs.getString(4)))
                 .list();
         PageResponse<MeAttendanceItem> page = PageResponse.of(items, paging.page(), paging.size(), total);
+        int[] streaks = attendanceStreaks(id, today);
         return new MeAttendancePage(page.items(), page.page(), page.size(), page.totalItems(), page.totalPages(),
-                visitsThisMonth(id, today), monthly(id, today));
+                visitsThisMonth(id, today), monthly(id, today), streaks[0], streaks[1]);
+    }
+
+
+    /** Current consecutive-day streak (today or yesterday may be the last visit) and all-time best. */
+    private int[] attendanceStreaks(long memberId, LocalDate today) {
+        List<LocalDate> dates = jdbc.sql("SELECT DISTINCT checkin_date FROM attendance_record WHERE member_id=:m ORDER BY checkin_date")
+                .param("m", memberId).query((rs, row) -> Db.date(rs, "checkin_date")).list();
+        if (dates.isEmpty()) return new int[]{0, 0};
+        int best = 1;
+        int run = 1;
+        int endingRun = 1;
+        for (int i = 1; i < dates.size(); i++) {
+            if (dates.get(i - 1).plusDays(1).equals(dates.get(i))) run++;
+            else run = 1;
+            best = Math.max(best, run);
+            if (i == dates.size() - 1) endingRun = run;
+        }
+        LocalDate last = dates.get(dates.size() - 1);
+        int current = (last.equals(today) || last.equals(today.minusDays(1))) ? endingRun : 0;
+        return new int[]{current, best};
     }
 
     private long visitsBetween(long memberId, LocalDate from, LocalDate to) {

@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - "feature/**"
+      - "fix/**"
   pull_request:
     branches:
       - main
       - frontend/premium-redesign
+      - feature/retention-blueprint
 
 permissions:
   contents: read
