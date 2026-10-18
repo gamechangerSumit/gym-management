@@ -14,6 +14,7 @@ import { AttendancePage } from './pages/AttendancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditPage, SettingsPage, StaffPage } from './pages/AdminPages';
 import { MyAttendancePage, MyHomePage, MyPaymentsPage, MyProfilePage, MyQrPage } from './pages/MemberPortal';
+import { AddOnsPage, MemberAddOnsPage } from './pages/AddOnsPage';
 
 type Need = 'staff' | 'member' | 'owner' | keyof StaffPermissions;
 
@@ -60,7 +61,8 @@ export default function App() {
           <Route path="/members/:id" element={<MemberDetailPage />} />
           <Route path="/plans" element={<PlansPage />} />
           <Route element={<Guard need="canRecordPayments" />}><Route path="/payments" element={<PaymentsPage />} /></Route>
-          <Route element={<Guard need="canManageMemberships" />}><Route path="/recovery" element={<RecoveryPage />} /></Route>
+          <Route element={<Guard need="canManageMemberships" />}><Route path="/recovery" element={<RecoveryPage />} />
+          <Route path="/addons" element={<AddOnsPage />} /></Route>
           <Route element={<Guard need="canViewReports" />}><Route path="/reports" element={<ReportsPage />} /></Route>
           <Route element={<Guard need="owner" />}>
             <Route path="/staff" element={<StaffPage />} />
@@ -77,6 +79,7 @@ export default function App() {
           <Route path="/me/attendance" element={<MyAttendancePage />} />
           <Route path="/me/payments" element={<MyPaymentsPage />} />
           <Route path="/me/profile" element={<MyProfilePage />} />
+          <Route path="/me/addons" element={<MemberAddOnsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFound />} />
