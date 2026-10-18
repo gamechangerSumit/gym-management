@@ -8,12 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * Runs the retention scan once per gym-local day after 06:00.
  * The scan is idempotent, so a restart or retry cannot create duplicate open cases.
  */
 @Component
+@ConditionalOnProperty(name = "app.automation.enabled", havingValue = "true", matchIfMissing = true)
 public class NoShowScheduler {
     private static final Logger log = LoggerFactory.getLogger(NoShowScheduler.class);
     private static final LocalTime RUN_AFTER = LocalTime.of(6, 0);
