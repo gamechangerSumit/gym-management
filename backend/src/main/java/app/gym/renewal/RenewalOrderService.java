@@ -41,6 +41,16 @@ public class RenewalOrderService {
     }
 
     @Transactional
+    public RenewalOrder createFromMembership(long membershipId) {
+        CreateRequest req=jdbc.sql("SELECT plan_id FROM membership WHERE id=:id AND status<>'CANCELLED'")
+            .param("id",membershipId).query((rs,row)->new CreateRequest(rs.getLong("plan_id"))).optional()
+            .orElseThrow(()->ApiException.notFound("Renewable membership not found."));
+        long memberId=jdbc.sql("SELECT member_id FROM membership WHERE id=:id")
+            .param("id",membershipId).query(Long.class).single();
+        return create(memberId,req);
+    }
+
+    @Transactional
     public RenewalOrder createForCurrentMember(CreateRequest req) {
         long memberId = jdbc.sql("SELECT id FROM member_profile WHERE user_id=:u AND status='ACTIVE'")
             .param("u", CurrentUser.id()).query(Long.class).optional()
