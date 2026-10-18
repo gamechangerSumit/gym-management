@@ -126,6 +126,8 @@ public class AddOnService {
         String kind = (String) addon.get("kind");
         long unitPrice = ((Number) addon.get("price_paise")).longValue();
         long total = Math.multiplyExact(unitPrice, req.quantity().longValue());
+        if (total > 10_000_000_000L)
+            throw ApiException.badRequest("ORDER_AMOUNT_TOO_HIGH", "Order total exceeds the supported payment limit.");
         if ("PRODUCT".equals(kind)) {
             Object stockValue = addon.get("stock_on_hand");
             int stock = ((Number) stockValue).intValue();
