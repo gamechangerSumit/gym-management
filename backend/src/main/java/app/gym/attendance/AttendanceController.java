@@ -37,7 +37,7 @@ public class AttendanceController {
     @PostMapping("/manual")
     @PreAuthorize("@perm.staffOrOwner()")
     public ScanResponse manual(@Valid @RequestBody ManualRequest req) {
-        return attendance.manual(req.memberId());
+        return attendance.manual(req.memberId(), req.reason());
     }
 
     @GetMapping
