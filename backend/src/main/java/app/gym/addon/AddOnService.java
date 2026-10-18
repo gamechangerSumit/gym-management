@@ -183,7 +183,7 @@ public class AddOnService {
         return new OrderDto(rs.getLong("id"), rs.getLong("member_id"), rs.getString("member_code"),
             rs.getString("full_name"), rs.getLong("addon_id"), rs.getString("addon_name"), rs.getString("kind"),
             rs.getInt("quantity"), rs.getLong("unit_price_paise"), rs.getLong("total_paise"),
-            Db.intOrNull(rs,"sessions_included"), rs.getInt("sessions_used"), rs.getString("status"),
+            intOrNull(rs,"sessions_included"), rs.getInt("sessions_used"), rs.getString("status"),
             Db.instant(rs,"created_at"), Db.instant(rs,"paid_at"), Db.instant(rs,"fulfilled_at"));
     }
 
