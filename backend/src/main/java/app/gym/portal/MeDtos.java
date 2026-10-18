@@ -20,7 +20,13 @@ public final class MeDtos {
     public record MePatchRequest(@Email @Size(max = 160) String email, @Size(max = 200) String emergencyContact) {}
 
     public record MeMembership(boolean hasMembership, String planName, LocalDate startDate, LocalDate endDate,
-                               String status, Long daysRemaining, long visitsThisMonth, long duesPaise) {}
+                               String status, Long daysRemaining, long visitsThisMonth, long visitsThisWeek,
+                               int weeklyVisitGoal, int currentStreakWeeks, long duesPaise) {
+        public MeMembership(boolean hasMembership, String planName, LocalDate startDate, LocalDate endDate,
+                            String status, Long daysRemaining, long visitsThisMonth, long duesPaise) {
+            this(hasMembership, planName, startDate, endDate, status, daysRemaining, visitsThisMonth, 0, 3, 0, duesPaise);
+        }
+    }
 
     public record MonthVisits(String month, long visits) {}
 
