@@ -152,7 +152,7 @@ public class MePortalService {
     }
 
     private long visitsBetween(long memberId, LocalDate from, LocalDate to) {
-        return jdbc.sql("SELECT count(*) FROM attendance_record WHERE member_id = :m AND checkin_date BETWEEN :from AND :to")
+        return jdbc.sql("SELECT count(DISTINCT checkin_date) FROM attendance_record WHERE member_id = :m AND checkin_date BETWEEN :from AND :to")
                 .param("m", memberId).param("from", from).param("to", to)
                 .query(Long.class).single();
     }
@@ -162,7 +162,7 @@ public class MePortalService {
         LocalDate currentWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate from = currentWeek.minusWeeks(52);
         Map<LocalDate, Long> counts = new HashMap<>();
-        jdbc.sql("SELECT date_trunc('week', checkin_date)::date AS week_start, count(*) AS visits " +
+        jdbc.sql("SELECT date_trunc('week', checkin_date)::date AS week_start, count(DISTINCT checkin_date) AS visits " +
                         "FROM attendance_record WHERE member_id = :m AND checkin_date >= :from AND checkin_date <= :today GROUP BY 1")
                 .param("m", memberId).param("from", from).param("today", today)
                 .query((rs, row) -> {
