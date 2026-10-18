@@ -43,7 +43,7 @@ export function AttendancePage() {
                   <div className="attendance-avatar">{a.memberName.split(' ').map((x) => x[0]).slice(0,2).join('').toUpperCase()}</div>
                   <div className="attendance-person"><strong>{a.memberName}</strong><span>{a.memberCode}</span></div>
                   <div className="attendance-time"><strong>{new Date(a.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong><span>{formatDateTime(a.checkedInAt)}</span></div>
-                  <span className={`attendance-source ${a.source === 'QR' ? 'qr' : ''}`} title={a.assistedReason ?? undefined}>{a.source === 'QR' ? <QrCode size={13} /> : <UsersRound size={13} />}{a.source === 'QR' ? 'QR' : 'Manual'}{a.assistedReason ? ` · ${a.assistedReason.replaceAll('_', ' ').toLowerCase()}` : ''}</span>
+                  <span className={`attendance-source ${a.source === 'QR' ? 'qr' : ''}`} title={a.assistedReason ?? undefined}>{a.source === 'QR' ? <QrCode size={13} /> : <UsersRound size={13} />}{a.source === 'QR' ? 'QR' : 'Manual'}{a.assistedReason ? ` · ${a.assistedReason.replace(/_/g, ' ').toLowerCase()}` : ''}</span>
                 </div>
               ))}
             </div>
