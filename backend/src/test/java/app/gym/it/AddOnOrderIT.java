@@ -25,11 +25,11 @@ class AddOnOrderIT extends app.gym.support.AbstractIT {
                 "stockOnHand", 2,
                 "sessionsIncluded", null,
                 "active", true
-        ), owner).andExpect(status().isCreated()).andReturn();
+        ), owner).andExpect(status().isCreated());
         long addonId = ((Number) read(addon, "$.id")).longValue();
 
         var order = post("/api/v1/me/addon-orders", map("addonId", addonId, "quantity", 1), member)
-                .andExpect(status().isCreated()).andReturn();
+                .andExpect(status().isCreated());
         long orderId = ((Number) read(order, "$.id")).longValue();
         assertThat(read(order, "$.status").toString()).isEqualTo("PAYMENT_PENDING");
         assertThat(jdbc.sql("SELECT stock_on_hand FROM gym_addon WHERE id=:id").param("id",addonId)
