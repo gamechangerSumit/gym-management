@@ -11,7 +11,9 @@ public final class AttendanceDtos {
 
     public record ScanRequest(@NotBlank @Size(max = 200) String token) {}
 
-    public record ManualRequest(@NotNull Long memberId, @NotBlank @Size(max = 80) String reason) {}
+    public record ManualRequest(@NotNull Long memberId, @NotBlank @Size(max = 80) String reason) {
+        public ManualRequest(Long memberId) { this(memberId, "MEMBER_NO_QR"); }
+    }
 
     public record ScanResponse(ScanResult result, String message, Long memberId, String memberCode, String memberName,
                                LocalDate membershipEndDate, Instant checkedInAt) {}
