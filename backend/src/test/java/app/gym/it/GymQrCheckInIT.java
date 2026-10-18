@@ -22,7 +22,7 @@ class GymQrCheckInIT extends app.gym.support.AbstractIT {
         var response = post("/api/v1/me/check-in", map("token", payload), member)
                 .andExpect(status().isOk());
         assertThat(read(response, "$.result").toString()).isEqualTo("CHECKED_IN");
-        assertThat(read(response, "$.memberId")).isEqualTo(memberId);
+        assertThat(((Number) read(response, "$.memberId")).longValue()).isEqualTo(memberId);
 
         Integer count = jdbc.sql("SELECT count(*) FROM attendance_record WHERE member_id=:m AND source='QR'")
                 .param("m", memberId).query(Integer.class).single();
