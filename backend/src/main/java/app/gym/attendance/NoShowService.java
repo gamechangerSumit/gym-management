@@ -43,12 +43,12 @@ public class NoShowService {
             """).param("today", clock.today()).update();
 
         return jdbc.sql("""
-            INSERT INTO no_show_case (gym_id, member_id, last_attendance_at, absent_days)
-            SELECT m.gym_id, m.id, latest.last_visit,
-                   GREATEST(0, (:today - COALESCE(latest.last_visit::date, m.join_date)))
+            INSERT INTO no_show_case (gym_id, member_id, last_attendance_at, last_attendance_date, absent_days)
+            SELECT m.gym_id, m.id, latest.last_visit_at, latest.last_visit_date,
+                   GREATEST(0, (:today - COALESCE(latest.last_visit_date, m.join_date)))
             FROM member_profile m
             LEFT JOIN LATERAL (
-                SELECT MAX(a.checked_in_at) AS last_visit
+                SELECT MAX(a.checked_in_at) AS last_visit_at, MAX(a.checkin_date) AS last_visit_date
                 FROM attendance_record a WHERE a.member_id = m.id
             ) latest ON TRUE
             WHERE m.status = 'ACTIVE'
@@ -57,9 +57,10 @@ public class NoShowService {
                   WHERE ms.member_id = m.id AND ms.status = 'ACTIVE'
                     AND ms.start_date <= :today AND ms.end_date >= :today
               )
-              AND (:today - COALESCE(latest.last_visit::date, m.join_date)) >= :threshold
+              AND (:today - COALESCE(latest.last_visit_date, m.join_date)) >= :threshold
             ON CONFLICT (member_id) WHERE status = 'OPEN'
             DO UPDATE SET last_attendance_at = EXCLUDED.last_attendance_at,
+                          last_attendance_date = EXCLUDED.last_attendance_date,
                           absent_days = EXCLUDED.absent_days,
                           updated_at = now()
             """).param("today", clock.today()).param("threshold", threshold).update();
@@ -69,7 +70,7 @@ public class NoShowService {
         return jdbc.sql("""
             SELECT c.id, m.id AS member_id, m.member_code, m.full_name, m.phone,
                    p.name AS plan_name, ms.end_date AS membership_end,
-                   c.last_attendance_at::date AS last_visit, c.absent_days,
+                   c.last_attendance_date AS last_visit, c.absent_days,
                    c.outcome, c.next_action_date
             FROM no_show_case c
             JOIN member_profile m ON m.id = c.member_id
