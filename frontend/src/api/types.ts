@@ -159,6 +159,7 @@ export interface AttendanceRecord {
   date: string;
   source: string;
   recordedBy: string | null;
+  assistedReason: string | null;
 }
 
 export interface DashboardSummary {
