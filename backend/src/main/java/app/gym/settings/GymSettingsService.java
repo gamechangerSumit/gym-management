@@ -22,8 +22,8 @@ public class GymSettingsService {
             @Min(0) @Max(1440) int duplicateWindowMinutes,
             @Min(1) @Max(365) int dropOffDays,
             @Min(0) @Max(90) int expiringSoonDays,
-            @Min(1) @Max(365) int noShowThresholdDays,
-            @Min(1) @Max(14) int weeklyVisitGoal,
+            @Min(1) @Max(365) Integer noShowThresholdDays,
+            @Min(1) @Max(14) Integer weeklyVisitGoal,
             boolean memberCanEditEmail) {
         public UpdateSettingsRequest(String gymName, String timezone, int duplicateWindowMinutes, int dropOffDays,
                                      int expiringSoonDays, int weeklyVisitGoal, boolean memberCanEditEmail) {
@@ -68,8 +68,8 @@ public class GymSettingsService {
                 .param("dw", req.duplicateWindowMinutes())
                 .param("dd", req.dropOffDays())
                 .param("es", req.expiringSoonDays())
-                .param("ns", req.noShowThresholdDays())
-                .param("wg", req.weeklyVisitGoal())
+                .param("ns", req.noShowThresholdDays() == null ? 10 : req.noShowThresholdDays())
+                .param("wg", req.weeklyVisitGoal() == null ? 3 : req.weeklyVisitGoal())
                 .param("me", req.memberCanEditEmail())
                 .update();
         Map<String, Object> details = new LinkedHashMap<>();
