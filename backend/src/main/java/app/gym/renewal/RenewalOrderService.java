@@ -35,7 +35,7 @@ public class RenewalOrderService {
     }
 
     public List<RenewalPlan> availablePlans() {
-        return jdbc.sql("SELECT id,name,duration_days,price_paise,description FROM membership_plan WHERE active=TRUE ORDER BY duration_days,price_paise")
+        return jdbc.sql("SELECT id,name,duration_days,price_paise,description FROM membership_plan WHERE active=TRUE AND price_paise > 0 ORDER BY duration_days,price_paise")
             .query((rs,row)->new RenewalPlan(rs.getLong("id"),rs.getString("name"),rs.getInt("duration_days"),
                 rs.getLong("price_paise"),rs.getString("description"))).list();
     }
@@ -65,7 +65,7 @@ public class RenewalOrderService {
             throw ApiException.conflict("RENEWAL_WINDOW_CLOSED","This membership ended more than 30 days ago. Contact the front desk.");
         if ("ON_HOLD".equals(current.status()))
             throw ApiException.conflict("MEMBERSHIP_ON_HOLD","Resume the membership before renewing.");
-        Map<String,Object> plan=jdbc.sql("SELECT id,name,duration_days,price_paise FROM membership_plan WHERE id=:id AND active=TRUE")
+        Map<String,Object> plan=jdbc.sql("SELECT id,name,duration_days,price_paise FROM membership_plan WHERE id=:id AND active=TRUE AND price_paise > 0")
             .param("id",req.planId()).query((rs,row) -> {
                 Map<String,Object> item = new java.util.HashMap<>();
                 item.put("id",rs.getLong("id")); item.put("name",rs.getString("name"));
