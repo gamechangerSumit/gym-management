@@ -598,3 +598,12 @@ ul { padding-left: 1.2rem; }
 .manual-reason select { width:100%;max-width:420px; }
 .attendance-source { max-width:210px; }
 @media(max-width:600px){.attendance-source{max-width:120px;white-space:normal}.manual-reason select{max-width:none}}
+
+
+/* Auditable no-show follow-up timeline */
+.no-show-history { display:grid;gap:.55rem;padding:.75rem;border:1px solid var(--line);border-radius:12px;background:var(--surface-soft); }
+.no-show-history-row { display:grid;grid-template-columns:1fr auto;gap:.2rem .7rem;padding-bottom:.55rem;border-bottom:1px solid var(--line);font-size:.7rem; }
+.no-show-history-row:last-child { padding-bottom:0;border-bottom:0; }
+.no-show-history-row span,.no-show-history-row small { color:var(--muted);font-size:.62rem; }
+.no-show-history-row p { grid-column:1/-1;margin:.2rem 0;white-space:pre-wrap; }
+@media(max-width:600px){.no-show-history-row{grid-template-columns:1fr}.no-show-history-row span{grid-row:2}}
