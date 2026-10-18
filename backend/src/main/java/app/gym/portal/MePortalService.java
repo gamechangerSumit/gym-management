@@ -166,8 +166,9 @@ public class MePortalService {
                         Db.date(rs, "checkin_date"), rs.getString(4)))
                 .list();
         PageResponse<MeAttendanceItem> page = PageResponse.of(items, paging.page(), paging.size(), total);
+        int[] streaks = attendanceStreaks(id, today);
         return new MeAttendancePage(page.items(), page.page(), page.size(), page.totalItems(), page.totalPages(),
-                visitsThisMonth(id, today), monthly(id, today), attendanceStreaks(id, today)[0], attendanceStreaks(id, today)[1]);
+                visitsThisMonth(id, today), monthly(id, today), streaks[0], streaks[1]);
     }
 
 
