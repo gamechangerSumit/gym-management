@@ -646,3 +646,8 @@ ul { padding-left: 1.2rem; }
 .reminder-message p { margin:0 0 .35rem;font-size:.75rem;line-height:1.5; }
 .reminder-message small { color:var(--muted);font-size:.62rem; }
 .reminder-card .recovery-actions { justify-content:flex-end; }
+
+
+/* Add-on product imagery */
+.addon-product-image{display:block;width:100%;height:180px;object-fit:cover;border-radius:14px;background:var(--surface-muted,#f3f4f6);margin-bottom:14px}
+.addon-product-image-preview{display:block;max-width:220px;max-height:180px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:6px;margin:4px 0 14px}
