@@ -10,6 +10,7 @@ import { Empty, FormError, PageHeader, QueryState, Stat } from '../components/ui
 const STATUSES = ['NOT_CONTACTED', 'CONTACTED', 'NO_ANSWER', 'WILL_RENEW', 'NOT_INTERESTED'];
 const OUTCOMES = ['WILL_RETURN', 'INJURED', 'TRAVELLING', 'TIMING_ISSUE', 'UNHAPPY', 'NO_RESPONSE', 'CANCELLED'];
 
+type FollowupEvent = { id:number; outcome:string; note:string|null; nextActionDate:string|null; recordedBy:string|null; createdAt:string };
 type NoShowCase = {
   id: number; memberId: number; memberCode: string; memberName: string; phone: string;
   planName: string | null; membershipEnd: string | null; lastVisit: string | null;
@@ -23,6 +24,8 @@ export function RecoveryPage() {
   const [outcomes, setOutcomes] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [nextActions, setNextActions] = useState<Record<number, string>>({});
+  const [historyFor, setHistoryFor] = useState<number | null>(null);
+  const history = useQuery({ queryKey:['no-show-history',historyFor], queryFn:()=>get<FollowupEvent[]>(`/api/v1/no-shows/${historyFor}/history`), enabled:historyFor !== null });
   const q = useQuery({ queryKey: ['followups', filter], queryFn: () => get<Followup[]>('/api/v1/followups' + qs({ status: filter })) });
   const noShows = useQuery({ queryKey: ['no-shows'], queryFn: () => get<NoShowCase[]>('/api/v1/no-shows') });
   const update = useMutation({ mutationFn: (a:{membershipId:number;contactStatus:string;note?:string}) => put('/api/v1/followups', a), onSuccess:()=>qc.invalidateQueries({queryKey:['followups']}) });
@@ -58,6 +61,8 @@ export function RecoveryPage() {
             <div className="recovery-person"><div className="recovery-avatar">{m.memberName.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div><div><Link to={`/members/${m.memberId}`}><strong>{m.memberName}</strong></Link><span>{m.memberCode} · {m.planName ?? 'Membership'}</span><small>Last visit: {m.lastVisit ? formatDate(m.lastVisit) : 'No recorded visit'} · Expires: {m.membershipEnd ? formatDate(m.membershipEnd) : '—'}</small></div></div>
             <div className="no-show-days"><strong>{m.absentDays}</strong><span>days absent</span></div>
             <div className="recovery-actions"><a className="btn small ghost" href={`tel:${m.phone}`}><Phone size={14}/> Call</a><a className="btn small ghost" href={`https://wa.me/${m.phone.replace(/\\D/g,'')}`} target="_blank" rel="noreferrer"><MessageCircle size={14}/> WhatsApp</a></div>
+            <button className="btn small ghost" onClick={()=>setHistoryFor(historyFor===m.id?null:m.id)}>{historyFor===m.id?'Hide follow-up history':'View follow-up history'}</button>
+            {historyFor===m.id && <div className="no-show-history">{history.isLoading?'Loading history…':history.isError?'Could not load history.':history.data?.length ? history.data.map(h=><div className="no-show-history-row" key={h.id}><strong>{titleCase(h.outcome)}</strong><span>{new Date(h.createdAt).toLocaleString()}</span>{h.note&&<p>{h.note}</p>}{h.nextActionDate&&<small>Next action: {formatDate(h.nextActionDate)}</small>}<small>Recorded by: {h.recordedBy??'System'}</small></div>):<p className="muted">No follow-up history recorded yet.</p>}</div>}
             <div className="no-show-outcome">
               <label>Outcome<select value={outcomes[m.id] ?? m.outcome ?? 'NO_RESPONSE'} onChange={e=>setOutcomes(v=>({...v,[m.id]:e.target.value}))}>{OUTCOMES.map(s=><option key={s} value={s}>{titleCase(s)}</option>)}</select></label>
               <label>Next action<input type="date" value={nextActions[m.id] ?? m.nextActionDate ?? ''} onChange={e=>setNextActions(v=>({...v,[m.id]:e.target.value}))}/></label>
