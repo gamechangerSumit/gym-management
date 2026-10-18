@@ -320,6 +320,7 @@ export interface MeMembership {
   visitsThisWeek: number;
   weeklyVisitGoal: number;
   currentStreakWeeks: number;
+  weeklyGoalPaused: boolean;
   duesPaise: number;
 }
 
