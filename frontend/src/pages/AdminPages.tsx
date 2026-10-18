@@ -115,6 +115,7 @@ export function SettingsPage() {
             if (!(s.duplicateWindowMinutes >= 0 && s.duplicateWindowMinutes <= 1440)) er.dup = 'Between 0 and 1440 minutes.';
             if (!(s.dropOffDays >= 1 && s.dropOffDays <= 365)) er.drop = 'Between 1 and 365 days.';
             if (!(s.expiringSoonDays >= 0 && s.expiringSoonDays <= 90)) er.exp = 'Between 0 and 90 days.';
+            if (!(s.weeklyVisitGoal >= 1 && s.weeklyVisitGoal <= 14)) er.goal = 'Between 1 and 14 visits per week.';
             setErrs(er); setSaved(false);
             if (Object.keys(er).length === 0) m.mutate(s);
           }}>
@@ -123,6 +124,7 @@ export function SettingsPage() {
             <Field label="Duplicate check-in window (minutes)" htmlFor="s-dup" error={errs.dup} hint="A second scan inside this window is shown as already checked in."><input id="s-dup" inputMode="numeric" value={s.duplicateWindowMinutes} onChange={(e) => setForm({ ...s, duplicateWindowMinutes: Number(e.target.value) })} /></Field>
             <Field label="Drop-off threshold (days)" htmlFor="s-drop" error={errs.drop} hint="Members with no visit for this many days appear on the dashboard."><input id="s-drop" inputMode="numeric" value={s.dropOffDays} onChange={(e) => setForm({ ...s, dropOffDays: Number(e.target.value) })} /></Field>
             <Field label="Expiring-soon window (days)" htmlFor="s-exp" error={errs.exp}><input id="s-exp" inputMode="numeric" value={s.expiringSoonDays} onChange={(e) => setForm({ ...s, expiringSoonDays: Number(e.target.value) })} /></Field>
+            <Field label="Weekly visit goal" htmlFor="s-goal" error={errs.goal} hint="Used for member weekly progress and streaks."><input id="s-goal" type="number" min={1} max={14} value={s.weeklyVisitGoal} onChange={(e) => setForm({ ...s, weeklyVisitGoal: Number(e.target.value) })} /></Field>
             <label className="check"><input type="checkbox" checked={s.memberCanEditEmail} onChange={(e) => setForm({ ...s, memberCanEditEmail: e.target.checked })} /> Members may edit their own email</label>
             <FormError error={m.error} />
             {saved && <p className="ok" role="status">Settings saved.</p>}
