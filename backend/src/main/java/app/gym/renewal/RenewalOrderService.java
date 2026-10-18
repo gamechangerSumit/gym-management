@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RenewalOrderService {
+    private record CurrentMembership(long id, LocalDate endDate, String status) {}
     public record CreateRequest(Long planId) {}
     public record RenewalPlan(long id, String name, int durationDays, long pricePaise, String description) {}
     public record RenewalOrder(long id, long memberId, String memberCode, String memberName,
@@ -52,16 +53,17 @@ public class RenewalOrderService {
         if (req == null || req.planId() == null) throw ApiException.badRequest("PLAN_REQUIRED","Choose a renewal plan.");
         jdbc.sql("SELECT id FROM member_profile WHERE id=:id AND status='ACTIVE' FOR UPDATE")
             .param("id",memberId).query(Long.class).optional().orElseThrow(()->ApiException.notFound("Active member not found."));
-        Map<String,Object> current=jdbc.sql("""
+        CurrentMembership current=jdbc.sql("""
             SELECT id, end_date, status FROM membership WHERE member_id=:member AND status <> 'CANCELLED'
             ORDER BY end_date DESC, id DESC LIMIT 1 FOR UPDATE
-            """).param("member",memberId).query().optional()
-            .orElseThrow(()->ApiException.conflict("NO_MEMBERSHIP","Assign a membership before creating a renewal."));
+            """).param("member",memberId)
+            .query((rs,row)->new CurrentMembership(rs.getLong("id"),rs.getObject("end_date",LocalDate.class),rs.getString("status")))
+            .optional().orElseThrow(()->ApiException.conflict("NO_MEMBERSHIP","Assign a membership before creating a renewal."));
         LocalDate today=clock.today();
-        LocalDate end=(LocalDate)current.get("end_date");
+        LocalDate end=current.endDate();
         if (end.isBefore(today.minusDays(30)))
             throw ApiException.conflict("RENEWAL_WINDOW_CLOSED","This membership ended more than 30 days ago. Contact the front desk.");
-        if ("ON_HOLD".equals(current.get("status")))
+        if ("ON_HOLD".equals(current.status()))
             throw ApiException.conflict("MEMBERSHIP_ON_HOLD","Resume the membership before renewing.");
         Map<String,Object> plan=jdbc.sql("SELECT id,name,duration_days,price_paise FROM membership_plan WHERE id=:id AND active=TRUE")
             .param("id",req.planId()).query().optional().orElseThrow(()->ApiException.notFound("Active plan not found."));
@@ -71,11 +73,11 @@ public class RenewalOrderService {
         long orderId=jdbc.sql("""
             INSERT INTO renewal_order(member_id,source_membership_id,plan_id,price_paise,duration_days)
             VALUES (:member,:source,:plan,:price,:duration) RETURNING id
-            """).param("member",memberId).param("source",((Number)current.get("id")).longValue())
+            """).param("member",memberId).param("source",current.id())
             .param("plan",req.planId()).param("price",((Number)plan.get("price_paise")).longValue())
             .param("duration",((Number)plan.get("duration_days")).intValue()).query(Long.class).single();
         audit.record("RENEWAL_ORDER_CREATED","RENEWAL_ORDER",orderId,
-            Map.of("memberId",memberId,"sourceMembershipId",current.get("id"),"planId",req.planId(),"pricePaise",plan.get("price_paise")));
+            Map.of("memberId",memberId,"sourceMembershipId",current.id(),"planId",req.planId(),"pricePaise",plan.get("price_paise")));
         return get(orderId);
     }
 
