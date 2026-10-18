@@ -26,6 +26,7 @@ export function DashboardPage() {
           <Stat label="Returned in 7 days" value={s.membersReturned7d}/>
           <Stat label="Renewals due in 7 days" value={s.renewalsDue7d}/>
           <Stat label="Renewal collection this month" value={formatMoney(s.renewalCollectedMonthPaise)}/>
+          <Stat label="Add-on revenue this month" value={formatMoney(s.addonRevenueMonthPaise)}/>
         </section>
       </>}</QueryState>
       <div className="dashboard-welcome"><div><span className="eyebrow">TODAY AT A GLANCE</span><h2>Keep the floor moving.</h2><p className="muted">Focus on the members and tasks that need attention today.</p></div><Link className="quick-action" to="/members"><span><UserPlus size={18}/></span><div><strong>Add member</strong><small>Grow your member base</small></div><ArrowUpRight size={17}/></Link></div>
