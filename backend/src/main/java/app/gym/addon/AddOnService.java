@@ -121,7 +121,12 @@ public class AddOnService {
             .param("id", memberId).query(Long.class).optional()
             .orElseThrow(() -> ApiException.notFound("Active member not found."));
         Map<String,Object> addon = jdbc.sql("SELECT id, kind, name, price_paise, stock_on_hand, sessions_included FROM gym_addon WHERE id=:id AND active=TRUE FOR UPDATE")
-            .param("id", req.addonId()).query().optional()
+            .param("id", req.addonId()).query((rs,row) -> {
+                Map<String,Object> item = new java.util.HashMap<>();
+                item.put("id",rs.getLong("id")); item.put("kind",rs.getString("kind")); item.put("name",rs.getString("name"));
+                item.put("price_paise",rs.getLong("price_paise")); item.put("stock_on_hand",rs.getObject("stock_on_hand"));
+                item.put("sessions_included",rs.getObject("sessions_included")); return item;
+            }).optional()
             .orElseThrow(() -> ApiException.notFound("Active add-on not found."));
         String kind = (String) addon.get("kind");
         long unitPrice = ((Number) addon.get("price_paise")).longValue();
@@ -200,7 +205,12 @@ public class AddOnService {
         Map<String,Object> order = jdbc.sql("""
             SELECT o.member_id, o.addon_id, o.status, a.kind, o.quantity
             FROM addon_order o JOIN gym_addon a ON a.id=o.addon_id WHERE o.id=:id FOR UPDATE
-            """).param("id",orderId).query().optional().orElseThrow(()->ApiException.notFound("Add-on order not found."));
+            """).param("id",orderId).query((rs,row) -> {
+                Map<String,Object> item = new java.util.HashMap<>();
+                item.put("member_id",rs.getLong("member_id")); item.put("addon_id",rs.getLong("addon_id"));
+                item.put("status",rs.getString("status")); item.put("kind",rs.getString("kind"));
+                item.put("quantity",rs.getInt("quantity")); return item;
+            }).optional().orElseThrow(()->ApiException.notFound("Add-on order not found."));
         if (requiredMemberId != null && ((Number)order.get("member_id")).longValue()!=requiredMemberId)
             throw ApiException.notFound("Add-on order not found.");
         if (!"PAYMENT_PENDING".equals(order.get("status")))
