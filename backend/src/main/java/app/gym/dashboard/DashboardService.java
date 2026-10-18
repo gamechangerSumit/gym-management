@@ -64,7 +64,7 @@ public class DashboardService {
                         rs.getLong("expired"), rs.getLong("todays_checkins"), collections, gs.expiringSoonDays(), today,
                         rs.getLong("active_members_7d"), rs.getLong("open_no_show_cases"),
                         rs.getLong("members_returned_7d"), rs.getLong("renewals_due_7d"),
-                        rs.getLong("renewal_collected_month_paise")))
+                        rs.getLong("renewal_collected_month_paise"), rs.getLong("addon_revenue_month_paise")))
                 .single();
     }
 
