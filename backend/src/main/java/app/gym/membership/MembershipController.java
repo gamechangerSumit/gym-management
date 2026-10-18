@@ -43,7 +43,7 @@ public class MembershipController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@perm.manageMemberships()")
     public MembershipDto renew(@PathVariable long id, @Valid @RequestBody(required = false) RenewRequest req) {
-        return memberships.renew(id, req == null ? new RenewRequest(null, null, null) : req);
+        throw ApiException.conflict("PAYMENT_REQUIRED", "Use the renewal-order workflow. A membership cannot be extended before a matching payment is recorded.");
     }
 
     @PostMapping("/memberships/{id}/hold")
