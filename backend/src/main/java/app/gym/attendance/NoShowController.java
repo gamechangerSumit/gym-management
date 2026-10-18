@@ -24,6 +24,11 @@ public class NoShowController {
         return new ScanResponse(affected, threshold);
     }
 
+    @GetMapping("/{id}/history")
+    public List<NoShowService.FollowupEvent> history(@PathVariable long id) {
+        return service.history(id);
+    }
+
     @PostMapping("/{id}/outcome")
     public void outcome(@PathVariable long id, @Valid @RequestBody NoShowService.OutcomeRequest request) {
         service.recordOutcome(id, request);
