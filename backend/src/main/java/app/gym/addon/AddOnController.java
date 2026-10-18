@@ -33,6 +33,12 @@ public class AddOnController {
     @PreAuthorize("@perm.owner()")
     public AddOnDto update(@PathVariable long id, @Valid @RequestBody AddOnRequest req) { return service.update(id, req); }
 
+    /** Remove an add-on from the member catalogue while preserving order history. */
+    @DeleteMapping("/addons/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@perm.owner()")
+    public void delete(@PathVariable long id) { service.delete(id); }
+
     @PostMapping("/me/addon-orders")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@perm.member()")
