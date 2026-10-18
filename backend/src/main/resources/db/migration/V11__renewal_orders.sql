@@ -6,7 +6,7 @@ CREATE TABLE renewal_order (
     source_membership_id BIGINT NOT NULL REFERENCES membership(id),
     plan_id BIGINT NOT NULL REFERENCES membership_plan(id),
     price_paise BIGINT NOT NULL CHECK (price_paise > 0),
-    duration_days INT NOT NULL CHECK (duration_days BETWEEN 1 AND 3650),
+    duration_days INT NOT NULL CHECK (duration_days BETWEEN 1 AND 3660),
     status VARCHAR(20) NOT NULL DEFAULT 'PAYMENT_PENDING'
       CHECK (status IN ('PAYMENT_PENDING', 'PAID', 'CANCELLED')),
     paid_membership_id BIGINT REFERENCES membership(id),
