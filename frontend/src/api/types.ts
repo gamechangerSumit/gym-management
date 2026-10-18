@@ -234,6 +234,7 @@ export interface Settings {
   duplicateWindowMinutes: number;
   dropOffDays: number;
   expiringSoonDays: number;
+  noShowThresholdDays: number;
   weeklyVisitGoal: number;
   memberCanEditEmail: boolean;
 }
