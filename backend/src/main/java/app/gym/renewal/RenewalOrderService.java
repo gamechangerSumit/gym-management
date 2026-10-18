@@ -66,7 +66,12 @@ public class RenewalOrderService {
         if ("ON_HOLD".equals(current.status()))
             throw ApiException.conflict("MEMBERSHIP_ON_HOLD","Resume the membership before renewing.");
         Map<String,Object> plan=jdbc.sql("SELECT id,name,duration_days,price_paise FROM membership_plan WHERE id=:id AND active=TRUE")
-            .param("id",req.planId()).query().optional().orElseThrow(()->ApiException.notFound("Active plan not found."));
+            .param("id",req.planId()).query((rs,row) -> {
+                Map<String,Object> item = new java.util.HashMap<>();
+                item.put("id",rs.getLong("id")); item.put("name",rs.getString("name"));
+                item.put("duration_days",rs.getInt("duration_days")); item.put("price_paise",rs.getLong("price_paise"));
+                return item;
+            }).optional().orElseThrow(()->ApiException.notFound("Active plan not found."));
         boolean pending=Boolean.TRUE.equals(jdbc.sql("SELECT EXISTS(SELECT 1 FROM renewal_order WHERE member_id=:m AND status='PAYMENT_PENDING')")
             .param("m",memberId).query(Boolean.class).single());
         if(pending) throw ApiException.conflict("RENEWAL_ALREADY_PENDING","You already have a renewal awaiting payment.");
@@ -118,7 +123,11 @@ public class RenewalOrderService {
     @Transactional
     public void cancel(long orderId,Long requiredMemberId){
         Map<String,Object> o=jdbc.sql("SELECT member_id,status FROM renewal_order WHERE id=:id FOR UPDATE")
-            .param("id",orderId).query().optional().orElseThrow(()->ApiException.notFound("Renewal order not found."));
+            .param("id",orderId).query((rs,row) -> {
+                Map<String,Object> item = new java.util.HashMap<>();
+                item.put("member_id",rs.getLong("member_id")); item.put("status",rs.getString("status"));
+                return item;
+            }).optional().orElseThrow(()->ApiException.notFound("Renewal order not found."));
         if(requiredMemberId!=null&&((Number)o.get("member_id")).longValue()!=requiredMemberId)throw ApiException.notFound("Renewal order not found.");
         if(!"PAYMENT_PENDING".equals(o.get("status")))throw ApiException.conflict("RENEWAL_NOT_CANCELLABLE","Only unpaid renewal orders can be cancelled.");
         jdbc.sql("UPDATE renewal_order SET status='CANCELLED',cancelled_at=now(),updated_at=now() WHERE id=:id").param("id",orderId).update();
