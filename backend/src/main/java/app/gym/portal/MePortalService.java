@@ -31,6 +31,8 @@ import java.time.DayOfWeek;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -133,6 +135,7 @@ public class MePortalService {
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         long visitsThisWeek = visitsBetween(id, weekStart, today);
         int weeklyGoal = settings.get().weeklyVisitGoal();
+        boolean weeklyGoalPaused = isWeekPaused(id, weekStart, today);
         int streakWeeks = currentStreakWeeks(id, today, weeklyGoal);
         long duesPaise = dues.duesFor(id).duesPaise();
         return jdbc.sql("SELECT p.name, ms.start_date, ms.end_date, ms.status FROM membership ms "
@@ -145,10 +148,10 @@ public class MePortalService {
                     LocalDate end = Db.date(rs, "end_date");
                     return new MeMembership(true, rs.getString("name"), start, end,
                             StatusCalculator.compute(rs.getString("status"), start, end, today, soon),
-                            StatusCalculator.daysRemaining(today, end), visits, visitsThisWeek, weeklyGoal, streakWeeks, duesPaise);
+                            StatusCalculator.daysRemaining(today, end), visits, visitsThisWeek, weeklyGoal, streakWeeks, weeklyGoalPaused, duesPaise);
                 })
                 .optional()
-                .orElse(new MeMembership(false, null, null, null, null, null, visits, visitsThisWeek, weeklyGoal, streakWeeks, duesPaise));
+                .orElse(new MeMembership(false, null, null, null, null, null, visits, visitsThisWeek, weeklyGoal, streakWeeks, weeklyGoalPaused, duesPaise));
     }
 
     public MeAttendancePage attendance(Paging paging) {
@@ -185,13 +188,34 @@ public class MePortalService {
                     counts.put(Db.date(rs, "week_start"), rs.getLong("visits"));
                     return 0;
                 }).list();
-        LocalDate cursor = counts.getOrDefault(currentWeek, 0L) >= goal ? currentWeek : currentWeek.minusWeeks(1);
+        Set<LocalDate> pausedWeeks = new HashSet<>();
+        jdbc.sql("SELECT h.held_at::date AS held_on, COALESCE(h.resumed_at::date,:today) AS resumed_on " +
+                        "FROM membership_hold_event h JOIN membership ms ON ms.id=h.membership_id " +
+                        "WHERE ms.member_id=:m AND h.held_at::date <= :today AND COALESCE(h.resumed_at::date,:today) >= :from")
+                .param("m",memberId).param("from",from).param("today",today)
+                .query((rs,row)->{
+                    LocalDate first=Db.date(rs,"held_on").with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    LocalDate last=Db.date(rs,"resumed_on").with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    for(LocalDate w=first;!w.isAfter(last);w=w.plusWeeks(1))pausedWeeks.add(w);
+                    return 0;
+                }).list();
+        LocalDate cursor = counts.getOrDefault(currentWeek, 0L) >= goal || pausedWeeks.contains(currentWeek)
+                ? currentWeek : currentWeek.minusWeeks(1);
         int streak = 0;
-        while (!cursor.isBefore(from) && counts.getOrDefault(cursor, 0L) >= goal) {
+        while (!cursor.isBefore(from)) {
+            if (pausedWeeks.contains(cursor)) { cursor=cursor.minusWeeks(1); continue; }
+            if (counts.getOrDefault(cursor, 0L) < goal) break;
             streak++;
             cursor = cursor.minusWeeks(1);
         }
         return streak;
+    }
+
+    private boolean isWeekPaused(long memberId, LocalDate from, LocalDate to) {
+        return Boolean.TRUE.equals(jdbc.sql("SELECT EXISTS (SELECT 1 FROM membership_hold_event h " +
+                        "JOIN membership ms ON ms.id=h.membership_id WHERE ms.member_id=:m " +
+                        "AND h.held_at::date <= :to AND COALESCE(h.resumed_at::date,:to) >= :from)")
+                .param("m",memberId).param("from",from).param("to",to).query(Boolean.class).single());
     }
 
     private long visitsThisMonth(long memberId, LocalDate today) {
