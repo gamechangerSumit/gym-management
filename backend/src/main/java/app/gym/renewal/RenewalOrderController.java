@@ -15,6 +15,10 @@ public class RenewalOrderController {
     private final RenewalOrderService service;
     public RenewalOrderController(RenewalOrderService service){this.service=service;}
 
+    @GetMapping("/me/renewal-options")
+    @PreAuthorize("@perm.member()")
+    public List<RenewalOrderService.RenewalPlan> options(){return service.availablePlans();}
+
     @PostMapping("/me/renewal-orders")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@perm.member()")
