@@ -58,6 +58,8 @@ export interface MemberDetail {
   duesPaise: number | null;
 }
 
+export interface Reminder { id:number; memberId:number; memberCode:string; memberName:string; phone:string; membershipId:number; planName:string; expiryDate:string; stageDays:number; status:string; messageText:string; scheduledFor:string; sentAt:string|null; }
+
 export interface RenewalPlan { id:number; name:string; durationDays:number; pricePaise:number; description:string|null; }
 
 export interface RenewalOrder { id:number; memberId:number; memberCode:string; memberName:string; sourceMembershipId:number; planId:number; planName:string; pricePaise:number; durationDays:number; status:string; paidMembershipId:number|null; createdAt:string; paidAt:string|null; }
