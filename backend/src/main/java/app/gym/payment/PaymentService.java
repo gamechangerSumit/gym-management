@@ -31,14 +31,14 @@ public class PaymentService {
 
     private static final String SELECT = "SELECT p.id, p.member_id, m.member_code, m.full_name, p.membership_id, "
             + "p.amount_paise, p.paid_at, p.method, p.receipt_no, p.status, p.void_reason, p.voided_at, "
-            + "u.login_id AS recorded_by, p.note FROM payment p JOIN member_profile m ON m.id = p.member_id "
+            + "u.login_id AS recorded_by, p.note, p.addon_order_id FROM payment p JOIN member_profile m ON m.id = p.member_id "
             + "LEFT JOIN user_account u ON u.id = p.recorded_by ";
 
     static final RowMapper<PaymentDto> MAPPER = (rs, i) -> new PaymentDto(rs.getLong("id"), rs.getLong("member_id"),
             rs.getString("member_code"), rs.getString("full_name"), Db.longOrNull(rs, "membership_id"),
             rs.getLong("amount_paise"), Db.instant(rs, "paid_at"), rs.getString("method"), rs.getString("receipt_no"),
             rs.getString("status"), rs.getString("void_reason"), Db.instant(rs, "voided_at"),
-            rs.getString("recorded_by"), rs.getString("note"));
+            rs.getString("recorded_by"), rs.getString("note"), Db.longOrNull(rs, "addon_order_id"));
 
     private final JdbcClient jdbc;
     private final GymClock clock;
@@ -100,6 +100,25 @@ public class PaymentService {
         jdbc.sql("SELECT id FROM member_profile WHERE id = :id FOR UPDATE").param("id", req.memberId())
                 .query(Long.class).optional().orElseThrow(() -> ApiException.notFound("Member not found."));
 
+        Map<String, Object> addonOrder = null;
+        if (req.addonOrderId() != null) {
+            if (req.membershipId() != null) {
+                throw ApiException.badRequest("INVALID_PAYMENT_LINK", "An add-on payment cannot be linked to a membership at the same time.");
+            }
+            addonOrder = jdbc.sql("SELECT member_id, total_paise, status FROM addon_order WHERE id=:id FOR UPDATE")
+                    .param("id", req.addonOrderId()).query().optional()
+                    .orElseThrow(() -> ApiException.notFound("Add-on order not found."));
+            if (((Number) addonOrder.get("member_id")).longValue() != req.memberId()) {
+                throw ApiException.badRequest("ADDON_MEMBER_MISMATCH", "This add-on order belongs to another member.");
+            }
+            if (!"PAYMENT_PENDING".equals(addonOrder.get("status"))) {
+                throw ApiException.conflict("ADDON_NOT_PAYABLE", "This add-on order is not awaiting payment.");
+            }
+            if (((Number) addonOrder.get("total_paise")).longValue() != req.amountPaise()) {
+                throw ApiException.badRequest("ADDON_AMOUNT_MISMATCH", "Payment amount must exactly match the add-on order total.");
+            }
+        }
+
         if (req.membershipId() != null) {
             boolean ok = Boolean.TRUE.equals(jdbc.sql("SELECT EXISTS (SELECT 1 FROM membership WHERE id = :ms "
                             + "AND member_id = :m AND status <> 'CANCELLED')")
@@ -114,7 +133,7 @@ public class PaymentService {
             throw ApiException.badRequest("INVALID_DATE", "The payment date cannot be in the future.");
         }
         Dues current = dues.duesFor(req.memberId());
-        if (req.amountPaise() > current.duesPaise() && !Boolean.TRUE.equals(req.allowOverpayment())) {
+        if (req.addonOrderId() == null && req.amountPaise() > current.duesPaise() && !Boolean.TRUE.equals(req.allowOverpayment())) {
             throw ApiException.unprocessable("OVERPAYMENT", "This payment (" + Money.formatInr(req.amountPaise())
                     + ") is more than the outstanding dues (" + Money.formatInr(Math.max(0, current.duesPaise()))
                     + "). Reduce the amount, or confirm it is an advance payment.");
@@ -128,14 +147,20 @@ public class PaymentService {
                 .param("at", Db.ts(paidAt))
                 .param("method", req.method())
                 .param("by", CurrentUser.idOrNull())
-                .param("note", req.note() == null || req.note().isBlank() ? null : req.note().trim())
+                .param("note", req.note() == null || req.note().isBlank() ? (req.addonOrderId() == null ? null : "Add-on order #" + req.addonOrderId()) : req.note().trim())
+                .param("addonOrder", req.addonOrderId())
                 .query().singleRow();
         long id = ((Number) row.get("id")).longValue();
+        if (req.addonOrderId() != null) {
+            jdbc.sql("UPDATE addon_order SET status='PAID', paid_at=:paidAt, updated_at=now() WHERE id=:id AND status='PAYMENT_PENDING'")
+                    .param("paidAt", Db.ts(paidAt)).param("id", req.addonOrderId()).update();
+        }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("memberId", req.memberId());
         details.put("amountPaise", req.amountPaise());
         details.put("method", req.method());
         details.put("receiptNo", row.get("receipt_no"));
+        if (req.addonOrderId() != null) details.put("addonOrderId", req.addonOrderId());
         audit.record("PAYMENT_RECORDED", "PAYMENT", id, details);
         return get(id);
     }
@@ -144,6 +169,13 @@ public class PaymentService {
     @Transactional
     public PaymentDto voidPayment(long id, String reason) {
         PaymentDto payment = get(id);
+        if (payment.addonOrderId() != null) {
+            String orderStatus = jdbc.sql("SELECT status FROM addon_order WHERE id=:id")
+                    .param("id", payment.addonOrderId()).query(String.class).optional().orElse("CANCELLED");
+            if ("FULFILLED".equals(orderStatus)) {
+                throw ApiException.conflict("ADDON_ALREADY_FULFILLED", "A fulfilled add-on order cannot have its payment voided.");
+            }
+        }
         if (!"RECORDED".equals(payment.status())) {
             throw ApiException.conflict("ALREADY_VOID", "This payment has already been voided.");
         }
@@ -152,6 +184,10 @@ public class PaymentService {
         jdbc.sql("UPDATE payment SET status = 'VOID', void_reason = :r, voided_by = :by, voided_at = now() "
                         + "WHERE id = :id AND status = 'RECORDED'")
                 .param("r", reason.trim()).param("by", CurrentUser.idOrNull()).param("id", id).update();
+        if (payment.addonOrderId() != null) {
+            jdbc.sql("UPDATE addon_order SET status='PAYMENT_PENDING', paid_at=NULL, updated_at=now() WHERE id=:id")
+                    .param("id", payment.addonOrderId()).update();
+        }
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("memberId", payment.memberId());
         details.put("amountPaise", payment.amountPaise());
