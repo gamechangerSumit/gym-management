@@ -74,6 +74,23 @@ public class AddOnService {
         return get(id);
     }
 
+    /**
+     * Soft-delete an add-on: keep its row so historical orders and receipts remain valid,
+     * but hide it from the member catalogue and prevent new orders.
+     */
+    @Transactional
+    public void delete(long id) {
+        int changed = jdbc.sql("UPDATE gym_addon SET active=FALSE, updated_at=now() WHERE id=:id AND active=TRUE")
+            .param("id", id).update();
+        if (changed == 0) {
+            boolean exists = jdbc.sql("SELECT EXISTS(SELECT 1 FROM gym_addon WHERE id=:id)")
+                .param("id", id).query(Boolean.class).single();
+            if (!exists) throw ApiException.notFound("Add-on not found.");
+            throw ApiException.conflict("ADDON_ALREADY_REMOVED", "This add-on has already been removed.");
+        }
+        audit.record("ADDON_REMOVED", "ADDON", id, Map.of("active", false));
+    }
+
     private static void validate(AddOnRequest req) {
         if (req == null || req.kind() == null || !List.of("PT", "DIET", "PRODUCT").contains(req.kind()))
             throw ApiException.badRequest("INVALID_ADDON_KIND", "Choose PT, DIET or PRODUCT.");
