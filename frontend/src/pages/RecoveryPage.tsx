@@ -29,7 +29,7 @@ export function RecoveryPage() {
   const q = useQuery({ queryKey: ['followups', filter], queryFn: () => get<Followup[]>('/api/v1/followups' + qs({ status: filter })) });
   const noShows = useQuery({ queryKey: ['no-shows'], queryFn: () => get<NoShowCase[]>('/api/v1/no-shows') });
   const update = useMutation({ mutationFn: (a:{membershipId:number;contactStatus:string;note?:string}) => put('/api/v1/followups', a), onSuccess:()=>qc.invalidateQueries({queryKey:['followups']}) });
-  const renew = useMutation({ mutationFn:(id:number)=>post(`/api/v1/memberships/${id}/renew`,{}), onSuccess:()=>qc.invalidateQueries({queryKey:['followups']}) });
+  const renew = useMutation({ mutationFn:(id:number)=>post(`/api/v1/memberships/${id}/renewal-order`,{}), onSuccess:()=>{void qc.invalidateQueries({queryKey:['followups']});void qc.invalidateQueries({queryKey:['renewal-orders']});} });
   const scan = useMutation({ mutationFn:()=>post<{affected:number;thresholdDays:number}>(`/api/v1/no-shows/scan?threshold=${threshold}`,{}), onSuccess:()=>qc.invalidateQueries({queryKey:['no-shows']}) });
   const saveOutcome = useMutation({
     mutationFn:(id:number)=>post(`/api/v1/no-shows/${id}/outcome`,{
@@ -75,12 +75,12 @@ export function RecoveryPage() {
       <section className="panel">
         <div className="section-heading"><div><span className="eyebrow">MEMBERSHIP EXPIRY</span><h2><Users size={20}/> Renewal recovery</h2><p className="muted">Contact tracking for expired memberships.</p></div></div>
         <div className="recovery-toolbar"><label>Status<select aria-label="Contact status" value={filter} onChange={(e)=>setFilter(e.target.value)}><option value="">All statuses</option>{STATUSES.map(s=><option key={s} value={s}>{titleCase(s)}</option>)}</select></label><span className="muted"><UserRoundCheck size={15}/> Personal outreach only</span></div>
-        <FormError error={update.error ?? renew.error}/>
+        <FormError error={update.error ?? renew.error}/>{renew.isSuccess&&<p className="muted">Payment-pending renewal order created. Open Renewal orders to verify payment before extending the membership.</p>}
         <QueryState q={q} isEmpty={(l)=>l.length===0} empty={<Empty title="Nobody to follow up" hint="Expired memberships will appear here."/>}>
           {(renewals)=> <div className="recovery-list">{renewals.map(f=><div className="recovery-card" key={f.membershipId}>
             <div className="recovery-person"><div className="recovery-avatar">{f.memberName.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase()}</div><div><Link to={`/members/${f.memberId}`}><strong>{f.memberName}</strong></Link><span>{f.memberCode} · {f.planName}</span><small>Ended {formatDate(f.endDate)}</small></div></div>
             <a className="recovery-phone" href={`tel:${f.phone}`}><Phone size={15}/>{f.phone}</a>
-            <div className="recovery-actions"><select aria-label={`Contact status for ${f.memberName}`} value={f.contactStatus} onChange={e=>update.mutate({membershipId:f.membershipId,contactStatus:e.target.value,note:f.note??undefined})}>{STATUSES.map(s=><option key={s} value={s}>{titleCase(s)}</option>)}</select><button className="btn small ghost" onClick={()=>{const note=window.prompt('Add a short note',f.note??'');if(note!==null)update.mutate({membershipId:f.membershipId,contactStatus:f.contactStatus,note:note.trim()});}}>Note</button><button className="btn small primary" disabled={renew.isPending} onClick={()=>renew.mutate(f.membershipId)}><CheckCircle2 size={14}/> Renew</button></div>
+            <div className="recovery-actions"><select aria-label={`Contact status for ${f.memberName}`} value={f.contactStatus} onChange={e=>update.mutate({membershipId:f.membershipId,contactStatus:e.target.value,note:f.note??undefined})}>{STATUSES.map(s=><option key={s} value={s}>{titleCase(s)}</option>)}</select><button className="btn small ghost" onClick={()=>{const note=window.prompt('Add a short note',f.note??'');if(note!==null)update.mutate({membershipId:f.membershipId,contactStatus:f.contactStatus,note:note.trim()});}}>Note</button><button className="btn small primary" disabled={renew.isPending} onClick={()=>renew.mutate(f.membershipId)}><CheckCircle2 size={14}/> Create payment order</button></div>
             {f.note && <div className="recovery-note">{f.note}</div>}
           </div>)}</div>}
         </QueryState>
