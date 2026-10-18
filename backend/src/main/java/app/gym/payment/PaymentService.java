@@ -116,7 +116,11 @@ public class PaymentService {
                 throw ApiException.badRequest("INVALID_PAYMENT_LINK", "An add-on payment cannot be linked to a membership at the same time.");
             }
             addonOrder = jdbc.sql("SELECT member_id, total_paise, status FROM addon_order WHERE id=:id FOR UPDATE")
-                    .param("id", req.addonOrderId()).query().optional()
+                    .param("id", req.addonOrderId()).query((rs,row) -> {
+                        Map<String,Object> item = new HashMap<>();
+                        item.put("member_id",rs.getLong("member_id")); item.put("total_paise",rs.getLong("total_paise"));
+                        item.put("status",rs.getString("status")); return item;
+                    }).optional()
                     .orElseThrow(() -> ApiException.notFound("Add-on order not found."));
             if (((Number) addonOrder.get("member_id")).longValue() != req.memberId()) {
                 throw ApiException.badRequest("ADDON_MEMBER_MISMATCH", "This add-on order belongs to another member.");
@@ -134,7 +138,11 @@ public class PaymentService {
             if (req.membershipId() != null || req.addonOrderId() != null)
                 throw ApiException.badRequest("INVALID_PAYMENT_LINK", "A renewal payment cannot also link to a membership or add-on order.");
             renewalOrder = jdbc.sql("SELECT member_id, price_paise, status FROM renewal_order WHERE id=:id FOR UPDATE")
-                    .param("id", req.renewalOrderId()).query().optional()
+                    .param("id", req.renewalOrderId()).query((rs,row) -> {
+                        Map<String,Object> item = new HashMap<>();
+                        item.put("member_id",rs.getLong("member_id")); item.put("price_paise",rs.getLong("price_paise"));
+                        item.put("status",rs.getString("status")); return item;
+                    }).optional()
                     .orElseThrow(() -> ApiException.notFound("Renewal order not found."));
             if (((Number) renewalOrder.get("member_id")).longValue() != req.memberId())
                 throw ApiException.badRequest("RENEWAL_MEMBER_MISMATCH", "This renewal order belongs to another member.");
