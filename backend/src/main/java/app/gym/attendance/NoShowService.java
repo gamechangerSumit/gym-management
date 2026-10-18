@@ -42,7 +42,7 @@ public class NoShowService {
                 FROM attendance_record a WHERE a.member_id = m.id
             ) latest ON TRUE
             WHERE m.status = 'ACTIVE'
-              AND CURRENT_DATE - COALESCE(latest.last_visit::date, m.join_date) >= :threshold
+              AND (:today - COALESCE(latest.last_visit::date, m.join_date)) >= :threshold
             ON CONFLICT (member_id) WHERE status = 'OPEN'
             DO UPDATE SET last_attendance_at = EXCLUDED.last_attendance_at,
                           absent_days = EXCLUDED.absent_days,
