@@ -121,7 +121,7 @@ class PaymentIT extends app.gym.support.AbstractIT {
         long pl = createPlan("P", 30, 1000);
         assign(m, pl, "2026-10-01");
         long p = id(post("/api/v1/payments", map("memberId", m, "amountPaise", 1000, "method", "CASH"), owner));
-        String html = get("/api/v1/payments/" + p + "/receipt.html", owner).andExpect(status().isOk())
+        String html = getHtml("/api/v1/payments/" + p + "/receipt.html", owner).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertThat(html).contains("Test Gym").contains("RC-000001").contains("Tom &lt;b&gt;Bold&lt;/b&gt;").doesNotContain("<b>Bold");
     }
