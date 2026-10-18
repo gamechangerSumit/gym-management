@@ -52,7 +52,7 @@ class SecurityRegressionIT extends app.gym.support.AbstractIT {
     @Test
     void flywayAppliedAllMigrations() {
         Integer n = jdbc.sql("SELECT count(*) FROM flyway_schema_history WHERE success").query(Integer.class).single();
-        assertThat(n).isEqualTo(5);
+        assertThat(n).isEqualTo(14);
     }
 
     @Test
@@ -69,6 +69,8 @@ class SecurityRegressionIT extends app.gym.support.AbstractIT {
     @Test
     void onlyOneActiveQrPassPerMemberAtDatabaseLevel() throws Exception {
         long m = createMember("Qr Person", "9600000002");
+        jdbc.sql("UPDATE member_qr_pass SET status='REVOKED', token_enc=NULL, revoked_at=now() WHERE member_id=:m AND status='ACTIVE'")
+                .param("m",m).update();
         jdbc.sql("INSERT INTO member_qr_pass (member_id, token_hash) VALUES (:m, :h)")
                 .param("m", m).param("h", "a".repeat(64)).update();
         org.junit.jupiter.api.Assertions.assertThrows(DataAccessException.class, () ->

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,19 +42,28 @@ public class AttendanceService {
     private final GymSettingsService settings;
     private final QrPassService passes;
     private final MemberService members;
+    private final NoShowService noShows;
 
+    @Autowired
     public AttendanceService(
             JdbcClient jdbc,
             GymClock clock,
             GymSettingsService settings,
             QrPassService passes,
-            MemberService members
+            MemberService members,
+            NoShowService noShows
     ) {
         this.jdbc = jdbc;
         this.clock = clock;
         this.settings = settings;
         this.passes = passes;
         this.members = members;
+        this.noShows = noShows;
+    }
+
+    public AttendanceService(JdbcClient jdbc, GymClock clock, GymSettingsService settings,
+                             QrPassService passes, MemberService members) {
+        this(jdbc, clock, settings, passes, members, null);
     }
 
     /**
@@ -104,12 +114,19 @@ public class AttendanceService {
     }
 
     @Transactional
-    public ScanResponse manual(long memberId) {
+    public ScanResponse manual(long memberId, String reason) {
         members.basic(memberId);
-        return checkIn(memberId, "MANUAL", null);
+        if (reason == null || reason.isBlank() || reason.length() > 80) {
+            throw ApiException.badRequest("INVALID_ASSISTED_REASON", "Choose a reason for assisted check-in.");
+        }
+        return checkIn(memberId, "MANUAL", null, reason.trim());
     }
 
     private ScanResponse checkIn(long memberId, String source, Long passId) {
+        return checkIn(memberId, source, passId, null);
+    }
+
+    private ScanResponse checkIn(long memberId, String source, Long passId, String assistedReason) {
 
         // Lock the member row so concurrent scans for the same member
         // cannot both pass the duplicate check.
@@ -204,8 +221,8 @@ public class AttendanceService {
 
         jdbc.sql(
                         "INSERT INTO attendance_record " +
-                        "(member_id, checked_in_at, checkin_date, source, recorded_by, qr_pass_id) " +
-                        "VALUES (:m, :at, :d, :src, :by, :pass)"
+                        "(member_id, checked_in_at, checkin_date, source, recorded_by, qr_pass_id, assisted_reason) " +
+                        "VALUES (:m, :at, :d, :src, :by, :pass, :reason)"
                 )
                 .param("m", memberId)
                 .param("at", Db.ts(now))
@@ -213,7 +230,11 @@ public class AttendanceService {
                 .param("src", source)
                 .param("by", CurrentUser.idOrNull())
                 .param("pass", passId)
+                .param("reason", assistedReason)
                 .update();
+
+        // A valid return visit closes the open risk case while preserving its history.
+        if (noShows != null) noShows.resolveOnReturn(memberId);
 
         return withMember(
                 ScanResult.CHECKED_IN,
@@ -319,7 +340,7 @@ public class AttendanceService {
 
         List<AttendanceDto> items = jdbc.sql(
                         "SELECT a.id, a.member_id, m.member_code, m.full_name, " +
-                        "a.checked_in_at, a.checkin_date, a.source, u.login_id " +
+                        "a.checked_in_at, a.checkin_date, a.source, u.login_id, a.assisted_reason " +
                         "FROM attendance_record a " +
                         "JOIN member_profile m ON m.id = a.member_id " +
                         "LEFT JOIN user_account u ON u.id = a.recorded_by" +
@@ -336,7 +357,8 @@ public class AttendanceService {
                         Db.instant(rs, "checked_in_at"),
                         Db.date(rs, "checkin_date"),
                         rs.getString("source"),
-                        rs.getString("login_id")
+                        rs.getString("login_id"),
+                        rs.getString("assisted_reason")
                 ))
                 .list();
 

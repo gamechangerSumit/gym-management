@@ -58,6 +58,43 @@ export interface MemberDetail {
   duesPaise: number | null;
 }
 
+export interface Reminder { id:number; memberId:number; memberCode:string; memberName:string; phone:string; membershipId:number; planName:string; expiryDate:string; stageDays:number; status:string; messageText:string; scheduledFor:string; sentAt:string|null; }
+
+export interface RenewalPlan { id:number; name:string; durationDays:number; pricePaise:number; description:string|null; }
+
+export interface RenewalOrder { id:number; memberId:number; memberCode:string; memberName:string; sourceMembershipId:number; planId:number; planName:string; pricePaise:number; durationDays:number; status:string; paidMembershipId:number|null; createdAt:string; paidAt:string|null; }
+
+export interface AddOn {
+  id: number;
+  kind: 'PT' | 'DIET' | 'PRODUCT';
+  name: string;
+  description: string | null;
+  pricePaise: number;
+  validityDays: number | null;
+  stockOnHand: number | null;
+  sessionsIncluded: number | null;
+  active: boolean;
+}
+
+export interface AddOnOrder {
+  id: number;
+  memberId: number;
+  memberCode: string;
+  memberName: string;
+  addonId: number;
+  addonName: string;
+  kind: 'PT' | 'DIET' | 'PRODUCT';
+  quantity: number;
+  unitPricePaise: number;
+  totalPaise: number;
+  sessionsIncluded: number | null;
+  sessionsUsed: number;
+  status: string;
+  createdAt: string;
+  paidAt: string | null;
+  fulfilledAt: string | null;
+}
+
 export interface Plan {
   id: number;
   name: string;
@@ -99,6 +136,8 @@ export interface Payment {
   voidedAt: string | null;
   recordedBy: string | null;
   note: string | null;
+  addonOrderId: number | null;
+  renewalOrderId: number | null;
 }
 
 export interface Dues {
@@ -159,6 +198,7 @@ export interface AttendanceRecord {
   date: string;
   source: string;
   recordedBy: string | null;
+  assistedReason: string | null;
 }
 
 export interface DashboardSummary {
@@ -169,6 +209,12 @@ export interface DashboardSummary {
   collections: { from: string; to: string; totalPaise: number; paymentCount: number; rule: string } | null;
   expiringSoonDays: number;
   asOf: string;
+  activeMembers7d: number;
+  openNoShowCases: number;
+  membersReturned7d: number;
+  renewalsDue7d: number;
+  renewalCollectedMonthPaise: number;
+  addonRevenueMonthPaise: number;
 }
 
 export interface ActionItem {
@@ -228,6 +274,8 @@ export interface Settings {
   duplicateWindowMinutes: number;
   dropOffDays: number;
   expiringSoonDays: number;
+  noShowThresholdDays: number;
+  weeklyVisitGoal: number;
   memberCanEditEmail: boolean;
 }
 
@@ -256,6 +304,8 @@ export interface MeProfile {
   joinDate: string;
   emergencyContact: string | null;
   status: string;
+  transactionalMessagesEnabled: boolean;
+  marketingConsent: boolean;
   canEditEmail: boolean;
 }
 
@@ -267,6 +317,10 @@ export interface MeMembership {
   status: string | null;
   daysRemaining: number | null;
   visitsThisMonth: number;
+  visitsThisWeek: number;
+  weeklyVisitGoal: number;
+  currentStreakWeeks: number;
+  weeklyGoalPaused: boolean;
   duesPaise: number;
 }
 

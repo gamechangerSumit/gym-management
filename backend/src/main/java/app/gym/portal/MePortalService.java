@@ -27,8 +27,12 @@ import app.gym.settings.GymSettings;
 import app.gym.settings.GymSettingsService;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -74,18 +78,20 @@ public class MePortalService {
     public MeProfile profile() {
         long id = memberId();
         boolean canEditEmail = settings.get().memberCanEditEmail();
-        return jdbc.sql("SELECT member_code, full_name, phone, email, join_date, emergency_contact, status "
+        return jdbc.sql("SELECT member_code, full_name, phone, email, join_date, emergency_contact, status, " +
+                        "transactional_messages_enabled, marketing_consent "
                         + "FROM member_profile WHERE id = :id")
                 .param("id", id)
                 .query((rs, i) -> new MeProfile(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                        Db.date(rs, "join_date"), rs.getString(6), rs.getString(7), canEditEmail))
+                        Db.date(rs, "join_date"), rs.getString(6), rs.getString(7), rs.getBoolean(8), rs.getBoolean(9), canEditEmail))
                 .single();
     }
 
     @Transactional
     public MeProfile patch(MePatchRequest req) {
         long id = memberId();
-        if (req.email() == null && req.emergencyContact() == null) {
+        if (req.email() == null && req.emergencyContact() == null
+                && req.transactionalMessagesEnabled() == null && req.marketingConsent() == null) {
             throw ApiException.badRequest("NOTHING_TO_UPDATE", "Provide a field to update.");
         }
         if (req.email() != null && !settings.get().memberCanEditEmail()) {
@@ -102,8 +108,22 @@ public class MePortalService {
             jdbc.sql("UPDATE member_profile SET emergency_contact = :e, updated_at = now() WHERE id = :id")
                     .param("e", ec).param("id", id).update();
         }
+        if (req.transactionalMessagesEnabled() != null) {
+            jdbc.sql("UPDATE member_profile SET transactional_messages_enabled=:enabled, updated_at=now() WHERE id=:id")
+                .param("enabled", req.transactionalMessagesEnabled()).param("id", id).update();
+            if (!req.transactionalMessagesEnabled()) {
+                jdbc.sql("UPDATE notification_outbox SET status='CANCELLED', updated_at=now() WHERE member_id=:id AND status='QUEUED'")
+                    .param("id", id).update();
+            }
+        }
+        if (req.marketingConsent() != null) {
+            jdbc.sql("UPDATE member_profile SET marketing_consent=:consent, updated_at=now() WHERE id=:id")
+                .param("consent", req.marketingConsent()).param("id", id).update();
+        }
         audit.record("MEMBER_SELF_UPDATED", "MEMBER", id, Map.of(
-                "emailChanged", req.email() != null, "emergencyContactChanged", req.emergencyContact() != null));
+                "emailChanged", req.email() != null, "emergencyContactChanged", req.emergencyContact() != null,
+                "transactionalMessagesPreferenceChanged", req.transactionalMessagesEnabled() != null,
+                "marketingConsentChanged", req.marketingConsent() != null));
         return profile();
     }
 
@@ -112,6 +132,11 @@ public class MePortalService {
         LocalDate today = clock.today();
         int soon = settings.get().expiringSoonDays();
         long visits = visitsThisMonth(id, today);
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        long visitsThisWeek = visitsBetween(id, weekStart, today);
+        int weeklyGoal = settings.get().weeklyVisitGoal();
+        boolean weeklyGoalPaused = isWeekPaused(id, weekStart, today);
+        int streakWeeks = currentStreakWeeks(id, today, weeklyGoal);
         long duesPaise = dues.duesFor(id).duesPaise();
         return jdbc.sql("SELECT p.name, ms.start_date, ms.end_date, ms.status FROM membership ms "
                         + "JOIN membership_plan p ON p.id = ms.plan_id "
@@ -123,10 +148,10 @@ public class MePortalService {
                     LocalDate end = Db.date(rs, "end_date");
                     return new MeMembership(true, rs.getString("name"), start, end,
                             StatusCalculator.compute(rs.getString("status"), start, end, today, soon),
-                            StatusCalculator.daysRemaining(today, end), visits, duesPaise);
+                            StatusCalculator.daysRemaining(today, end), visits, visitsThisWeek, weeklyGoal, streakWeeks, weeklyGoalPaused, duesPaise);
                 })
                 .optional()
-                .orElse(new MeMembership(false, null, null, null, null, null, visits, duesPaise));
+                .orElse(new MeMembership(false, null, null, null, null, null, visits, visitsThisWeek, weeklyGoal, streakWeeks, weeklyGoalPaused, duesPaise));
     }
 
     public MeAttendancePage attendance(Paging paging) {
@@ -143,6 +168,54 @@ public class MePortalService {
         PageResponse<MeAttendanceItem> page = PageResponse.of(items, paging.page(), paging.size(), total);
         return new MeAttendancePage(page.items(), page.page(), page.size(), page.totalItems(), page.totalPages(),
                 visitsThisMonth(id, today), monthly(id, today));
+    }
+
+    private long visitsBetween(long memberId, LocalDate from, LocalDate to) {
+        return jdbc.sql("SELECT count(DISTINCT checkin_date) FROM attendance_record WHERE member_id = :m AND checkin_date BETWEEN :from AND :to")
+                .param("m", memberId).param("from", from).param("to", to)
+                .query(Long.class).single();
+    }
+
+    /** Consecutive calendar weeks that reached the configured goal; current incomplete week does not reset a streak. */
+    private int currentStreakWeeks(long memberId, LocalDate today, int goal) {
+        LocalDate currentWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate from = currentWeek.minusWeeks(52);
+        Map<LocalDate, Long> counts = new HashMap<>();
+        jdbc.sql("SELECT date_trunc('week', checkin_date)::date AS week_start, count(DISTINCT checkin_date) AS visits " +
+                        "FROM attendance_record WHERE member_id = :m AND checkin_date >= :from AND checkin_date <= :today GROUP BY 1")
+                .param("m", memberId).param("from", from).param("today", today)
+                .query((rs, row) -> {
+                    counts.put(Db.date(rs, "week_start"), rs.getLong("visits"));
+                    return 0;
+                }).list();
+        Set<LocalDate> pausedWeeks = new HashSet<>();
+        jdbc.sql("SELECT h.held_at::date AS held_on, COALESCE(h.resumed_at::date,:today) AS resumed_on " +
+                        "FROM membership_hold_event h JOIN membership ms ON ms.id=h.membership_id " +
+                        "WHERE ms.member_id=:m AND h.held_at::date <= :today AND COALESCE(h.resumed_at::date,:today) >= :from")
+                .param("m",memberId).param("from",from).param("today",today)
+                .query((rs,row)->{
+                    LocalDate first=Db.date(rs,"held_on").with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    LocalDate last=Db.date(rs,"resumed_on").with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    for(LocalDate w=first;!w.isAfter(last);w=w.plusWeeks(1))pausedWeeks.add(w);
+                    return 0;
+                }).list();
+        LocalDate cursor = counts.getOrDefault(currentWeek, 0L) >= goal || pausedWeeks.contains(currentWeek)
+                ? currentWeek : currentWeek.minusWeeks(1);
+        int streak = 0;
+        while (!cursor.isBefore(from)) {
+            if (pausedWeeks.contains(cursor)) { cursor=cursor.minusWeeks(1); continue; }
+            if (counts.getOrDefault(cursor, 0L) < goal) break;
+            streak++;
+            cursor = cursor.minusWeeks(1);
+        }
+        return streak;
+    }
+
+    private boolean isWeekPaused(long memberId, LocalDate from, LocalDate to) {
+        return Boolean.TRUE.equals(jdbc.sql("SELECT EXISTS (SELECT 1 FROM membership_hold_event h " +
+                        "JOIN membership ms ON ms.id=h.membership_id WHERE ms.member_id=:m " +
+                        "AND h.held_at::date <= :to AND COALESCE(h.resumed_at::date,:to) >= :from)")
+                .param("m",memberId).param("from",from).param("to",to).query(Boolean.class).single());
     }
 
     private long visitsThisMonth(long memberId, LocalDate today) {

@@ -11,11 +11,18 @@ public final class AttendanceDtos {
 
     public record ScanRequest(@NotBlank @Size(max = 200) String token) {}
 
-    public record ManualRequest(@NotNull Long memberId) {}
+    public record ManualRequest(@NotNull Long memberId, @NotBlank @Size(max = 80) String reason) {
+        public ManualRequest(Long memberId) { this(memberId, "MEMBER_NO_QR"); }
+    }
 
     public record ScanResponse(ScanResult result, String message, Long memberId, String memberCode, String memberName,
                                LocalDate membershipEndDate, Instant checkedInAt) {}
 
     public record AttendanceDto(long id, long memberId, String memberCode, String memberName, Instant checkedInAt,
-                                LocalDate date, String source, String recordedBy) {}
+                                LocalDate date, String source, String recordedBy, String assistedReason) {
+        public AttendanceDto(long id, long memberId, String memberCode, String memberName, Instant checkedInAt,
+                             LocalDate date, String source, String recordedBy) {
+            this(id, memberId, memberCode, memberName, checkedInAt, date, source, recordedBy, null);
+        }
+    }
 }

@@ -153,10 +153,10 @@ class QrAttendanceIT extends app.gym.support.AbstractIT {
     @Test
     void manualCheckInUsesTheSameRules() throws Exception {
         setUp();
-        post("/api/v1/attendance/manual", map("memberId", member), desk)
+        post("/api/v1/attendance/manual", map("memberId", member, "reason", "MEMBER_NO_QR"), desk)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.result").value("CHECKED_IN"));
-        post("/api/v1/attendance/manual", map("memberId", member), desk).andExpect(jsonPath("$.result").value("DUPLICATE_RECENT"));
-        post("/api/v1/attendance/manual", map("memberId", 424242), desk).andExpect(status().isNotFound());
+        post("/api/v1/attendance/manual", map("memberId", member, "reason", "MEMBER_NO_QR"), desk).andExpect(jsonPath("$.result").value("DUPLICATE_RECENT"));
+        post("/api/v1/attendance/manual", map("memberId", 424242, "reason", "MEMBER_NO_QR"), desk).andExpect(status().isNotFound());
         assertThat(jdbc.sql("SELECT source FROM attendance_record").query(String.class).single()).isEqualTo("MANUAL");
         get("/api/v1/attendance", desk).andExpect(status().isOk()).andExpect(jsonPath("$.totalItems").value(1))
                 .andExpect(jsonPath("$.items[0].source").value("MANUAL"));
@@ -168,7 +168,7 @@ class QrAttendanceIT extends app.gym.support.AbstractIT {
         Who memberUser = createMemberUser("qr.person", member);
         String t = token();
         post("/api/v1/attendance/scan", map("token", t), memberUser).andExpect(status().isForbidden());
-        post("/api/v1/attendance/manual", map("memberId", member), memberUser).andExpect(status().isForbidden());
+        post("/api/v1/attendance/manual", map("memberId", member, "reason", "MEMBER_NO_QR"), memberUser).andExpect(status().isForbidden());
         get("/api/v1/attendance", memberUser).andExpect(status().isForbidden());
         assertThat(records()).isZero();
     }

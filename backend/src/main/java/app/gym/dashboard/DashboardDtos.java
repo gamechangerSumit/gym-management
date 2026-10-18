@@ -10,7 +10,14 @@ public final class DashboardDtos {
 
     /** collections is null for staff without finance access (the dashboard is "limited, no finance" for staff). */
     public record Summary(long activeMembers, long expiringSoon, long expired, long todaysCheckIns,
-                          Collections collections, int expiringSoonDays, LocalDate asOf) {}
+                          Collections collections, int expiringSoonDays, LocalDate asOf,
+                          long activeMembers7d, long openNoShowCases, long membersReturned7d,
+                          long renewalsDue7d, long renewalCollectedMonthPaise, long addonRevenueMonthPaise) {
+        public Summary(long activeMembers, long expiringSoon, long expired, long todaysCheckIns,
+                       Collections collections, int expiringSoonDays, LocalDate asOf) {
+            this(activeMembers, expiringSoon, expired, todaysCheckIns, collections, expiringSoonDays, asOf, 0, 0, 0, 0, 0, 0);
+        }
+    }
 
     /** Every item carries the rule that produced it, so the owner can see why it is listed. */
     public record ActionItem(String type, long memberId, String memberCode, String memberName, String phone,

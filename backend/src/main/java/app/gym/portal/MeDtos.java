@@ -14,13 +14,30 @@ public final class MeDtos {
     private MeDtos() {}
 
     public record MeProfile(String memberCode, String fullName, String phone, String email, LocalDate joinDate,
-                            String emergencyContact, String status, boolean canEditEmail) {}
+                            String emergencyContact, String status, boolean transactionalMessagesEnabled, boolean marketingConsent,
+                            boolean canEditEmail) {
+        public MeProfile(String memberCode, String fullName, String phone, String email, LocalDate joinDate,
+                         String emergencyContact, String status, boolean canEditEmail) {
+            this(memberCode, fullName, phone, email, joinDate, emergencyContact, status, true, false, canEditEmail);
+        }
+    }
 
     /** Only editable fields. Unknown fields (name, phone, ...) are rejected by strict JSON binding. */
-    public record MePatchRequest(@Email @Size(max = 160) String email, @Size(max = 200) String emergencyContact) {}
+    public record MePatchRequest(@Email @Size(max = 160) String email, @Size(max = 200) String emergencyContact,
+                                 Boolean transactionalMessagesEnabled, Boolean marketingConsent) {
+        public MePatchRequest(String email, String emergencyContact) {
+            this(email, emergencyContact, null, null);
+        }
+    }
 
     public record MeMembership(boolean hasMembership, String planName, LocalDate startDate, LocalDate endDate,
-                               String status, Long daysRemaining, long visitsThisMonth, long duesPaise) {}
+                               String status, Long daysRemaining, long visitsThisMonth, long visitsThisWeek,
+                               int weeklyVisitGoal, int currentStreakWeeks, boolean weeklyGoalPaused, long duesPaise) {
+        public MeMembership(boolean hasMembership, String planName, LocalDate startDate, LocalDate endDate,
+                            String status, Long daysRemaining, long visitsThisMonth, long duesPaise) {
+            this(hasMembership, planName, startDate, endDate, status, daysRemaining, visitsThisMonth, 0, 3, 0, false, duesPaise);
+        }
+    }
 
     public record MonthVisits(String month, long visits) {}
 

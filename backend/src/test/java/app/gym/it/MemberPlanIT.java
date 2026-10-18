@@ -154,7 +154,7 @@ class MemberPlanIT extends app.gym.support.AbstractIT {
     @Test
     void settingsAreOwnerOnlyAndValidated() throws Exception {
         put("/api/v1/settings", map("gymName", "Iron Works", "timezone", "Asia/Kolkata", "duplicateWindowMinutes", 5,
-                "dropOffDays", 10, "expiringSoonDays", 5, "memberCanEditEmail", true), owner)
+                "dropOffDays", 10, "expiringSoonDays", 5, "memberCanEditEmail", true, "weeklyVisitGoal", 3, "noShowThresholdDays", 10), owner)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.gymName").value("Iron Works"));
         put("/api/v1/settings", map("gymName", "X", "timezone", "Mars/Olympus", "duplicateWindowMinutes", 5,
                 "dropOffDays", 10, "expiringSoonDays", 5, "memberCanEditEmail", true), owner)

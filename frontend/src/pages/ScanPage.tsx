@@ -352,6 +352,7 @@ function ManualCheckin({
   onResult: (r: ScanResponse) => void;
 }) {
   const [q, setQ] = useState('');
+  const [reason, setReason] = useState('MEMBER_NO_QR');
   const dq = useDebounced(q.trim());
 
   const res = useQuery({
@@ -368,6 +369,7 @@ function ManualCheckin({
     mutationFn: (memberId: number) =>
       post<ScanResponse>('/api/v1/attendance/manual', {
         memberId,
+        reason,
       }),
 
     onSuccess: (response) => {
@@ -378,6 +380,7 @@ function ManualCheckin({
 
   return (
     <div className="manual-checkin-card">
+      <label className="manual-reason">Assisted check-in reason<select aria-label="Assisted check-in reason" value={reason} onChange={(event) => setReason(event.target.value)}><option value="MEMBER_NO_QR">Member has no QR pass</option><option value="PHONE_UNAVAILABLE">Phone unavailable</option><option value="QR_NOT_SCANNING">QR code not scanning</option><option value="ACCESSIBILITY_HELP">Accessibility assistance</option><option value="STAFF_CORRECTION">Staff correction</option></select></label>
       <div className="manual-search"><Keyboard size={17}/><input
         aria-label="Find member"
         placeholder="Search name, phone or member code"
