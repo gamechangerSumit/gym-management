@@ -18,10 +18,15 @@ public final class PaymentDtos {
             Instant paidAt,
             @Size(max = 300) String note,
             Boolean allowOverpayment,
-            Long addonOrderId) {
+            Long addonOrderId,
+            Long renewalOrderId) {
         public PaymentRequest(Long memberId, Long membershipId, long amountPaise, String method,
                               Instant paidAt, String note, Boolean allowOverpayment) {
-            this(memberId, membershipId, amountPaise, method, paidAt, note, allowOverpayment, null);
+            this(memberId, membershipId, amountPaise, method, paidAt, note, allowOverpayment, null, null);
+        }
+        public PaymentRequest(Long memberId, Long membershipId, long amountPaise, String method,
+                              Instant paidAt, String note, Boolean allowOverpayment, Long addonOrderId) {
+            this(memberId, membershipId, amountPaise, method, paidAt, note, allowOverpayment, addonOrderId, null);
         }
     }
 
@@ -29,12 +34,19 @@ public final class PaymentDtos {
 
     public record PaymentDto(long id, long memberId, String memberCode, String memberName, Long membershipId,
                              long amountPaise, Instant paidAt, String method, String receiptNo, String status,
-                             String voidReason, Instant voidedAt, String recordedBy, String note, Long addonOrderId) {
+                             String voidReason, Instant voidedAt, String recordedBy, String note,
+                             Long addonOrderId, Long renewalOrderId) {
         public PaymentDto(long id, long memberId, String memberCode, String memberName, Long membershipId,
                           long amountPaise, Instant paidAt, String method, String receiptNo, String status,
                           String voidReason, Instant voidedAt, String recordedBy, String note) {
             this(id, memberId, memberCode, memberName, membershipId, amountPaise, paidAt, method, receiptNo,
-                 status, voidReason, voidedAt, recordedBy, note, null);
+                 status, voidReason, voidedAt, recordedBy, note, null, null);
+        }
+        public PaymentDto(long id, long memberId, String memberCode, String memberName, Long membershipId,
+                          long amountPaise, Instant paidAt, String method, String receiptNo, String status,
+                          String voidReason, Instant voidedAt, String recordedBy, String note, Long addonOrderId) {
+            this(id, memberId, memberCode, memberName, membershipId, amountPaise, paidAt, method, receiptNo,
+                 status, voidReason, voidedAt, recordedBy, note, addonOrderId, null);
         }
     }
 
