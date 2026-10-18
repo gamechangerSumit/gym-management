@@ -173,8 +173,8 @@ public class PaymentService {
         if (payment.addonOrderId() != null) {
             String orderStatus = jdbc.sql("SELECT status FROM addon_order WHERE id=:id")
                     .param("id", payment.addonOrderId()).query(String.class).optional().orElse("CANCELLED");
-            if ("FULFILLED".equals(orderStatus)) {
-                throw ApiException.conflict("ADDON_ALREADY_FULFILLED", "A fulfilled add-on order cannot have its payment voided.");
+            if ("FULFILLED".equals(orderStatus) || "IN_PROGRESS".equals(orderStatus)) {
+                throw ApiException.conflict("ADDON_ALREADY_USED", "An add-on order with fulfilment or PT usage cannot have its payment voided.");
             }
         }
         if (!"RECORDED".equals(payment.status())) {
