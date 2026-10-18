@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, ClipboardList, Dumbbell, Package, Plus, ShoppingBag, Utensils } from 'lucide-react';
-import { get, post } from '../api/client';
+import { CheckCircle2, ClipboardList, Dumbbell, Package, Plus, ShoppingBag, Trash2, Utensils } from 'lucide-react';
+import { del, get, post } from '../api/client';
 import type { AddOn, AddOnOrder } from '../api/types';
 import { formatDateTime, formatMoney, titleCase } from '../lib/format';
 import { useAuth } from '../auth/AuthContext';
@@ -40,6 +40,13 @@ export function AddOnsPage() {
       sessionsIncluded:kind==='PT'?Number(sessions):null,active:true,imageData:imageData||null
     }),
     onSuccess:()=>{setName('');setDescription('');setPrice('');setValidity('');setImageData('');setImageError(undefined);setCreateError(undefined);void qc.invalidateQueries({queryKey:['addons']});},
+  });
+  const removeAddon = useMutation({
+    mutationFn: (id:number) => del('/api/v1/addons/'+id),
+    onSuccess: () => {
+      void qc.invalidateQueries({queryKey:['addons']});
+      void qc.invalidateQueries({queryKey:['addons',isOwner]});
+    },
   });
   const recordPayment = useMutation({
     mutationFn:(o:AddOnOrder)=>post('/api/v1/payments',{
@@ -82,12 +89,12 @@ export function AddOnsPage() {
     <section className="panel">
       <div className="section-heading"><div><span className="eyebrow">CATALOGUE</span><h2>Available add-ons</h2></div></div>
       <QueryState q={catalog} isEmpty={(a)=>a.length===0} empty={<Empty title="No add-ons yet" hint={isOwner?'Create PT, diet or product items above.':'Ask the owner to publish available add-ons.'}/>}>
-        {(items)=><div className="addon-grid">{items.map(a=><article className="addon-tile" key={a.id}>{a.imageData?<img className="addon-product-image" src={a.imageData} alt={a.name}/>:<div className="addon-icon">{kindIcon(a.kind)}</div>}<div className="addon-title"><strong>{a.name}</strong><span className="badge info">{titleCase(a.kind)}</span></div><p>{a.description||'Ask the front desk for details and terms.'}</p><strong className="addon-price">{formatMoney(a.pricePaise)}</strong><small>{a.validityDays?a.validityDays+' days validity · ':''}{a.kind==='PRODUCT'?(a.stockOnHand??0)+' in stock':a.kind==='PT'?(a.sessionsIncluded+' sessions'):'Digital/service add-on'}</small></article>)}</div>}
+        {(items)=><div className="addon-grid">{items.map(a=><article className="addon-tile" key={a.id}>{a.imageData?<img className="addon-product-image" src={a.imageData} alt={a.name}/>:<div className="addon-icon">{kindIcon(a.kind)}</div>}<div className="addon-title"><strong>{a.name}</strong><span className="badge info">{titleCase(a.kind)}</span>{!a.active&&<span className="badge bad">Removed</span>}</div><p>{a.description||'Ask the front desk for details and terms.'}</p><strong className="addon-price">{formatMoney(a.pricePaise)}</strong><small>{a.validityDays?a.validityDays+' days validity · ':''}{a.kind==='PRODUCT'?(a.stockOnHand??0)+' in stock':a.kind==='PT'?(a.sessionsIncluded+' sessions'):'Digital/service add-on'}</small>{isOwner&&a.active&&<button className="btn small ghost danger" disabled={removeAddon.isPending} onClick={()=>{if(window.confirm('Remove "'+a.name+'" from the member catalogue? Existing orders and receipts will be preserved.'))removeAddon.mutate(a.id);}}><Trash2 size={14}/> Remove product</button>}</article>)}</div>}
       </QueryState>
     </section>
     <section className="panel">
       <div className="section-heading"><div><span className="eyebrow">ORDER QUEUE</span><h2><ClipboardList size={19}/> Add-on orders</h2><p className="muted">Record payment only after the money is actually received and verified.</p></div></div>
-      <FormError error={recordPayment.error??fulfill.error??session.error??cancel.error}/>
+      <FormError error={recordPayment.error??fulfill.error??session.error??cancel.error??removeAddon.error}/>
       <QueryState q={orders} isEmpty={(o)=>o.length===0} empty={<Empty title="No add-on orders" hint="Member requests will appear here."/>}>
         {(list)=><div className="recovery-list">{list.map(o=><article className="recovery-card addon-order-card" key={o.id}>
           <div className="recovery-person"><div className="recovery-avatar">{kindIcon(o.kind)}</div><div><strong>{o.addonName}</strong><span>{o.memberName} · {o.memberCode}</span><small>Order #{o.id} · {formatDateTime(o.createdAt)} · Qty {o.quantity}</small>{o.kind==='PT'&&<small>Sessions: {o.sessionsUsed}/{o.sessionsIncluded??0}</small>}</div></div>
