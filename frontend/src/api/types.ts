@@ -170,6 +170,11 @@ export interface DashboardSummary {
   collections: { from: string; to: string; totalPaise: number; paymentCount: number; rule: string } | null;
   expiringSoonDays: number;
   asOf: string;
+  activeMembers7d: number;
+  openNoShowCases: number;
+  membersReturned7d: number;
+  renewalsDue7d: number;
+  renewalCollectedMonthPaise: number;
 }
 
 export interface ActionItem {
