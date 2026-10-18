@@ -328,6 +328,8 @@ export interface MeMembership {
 export interface MeAttendancePage extends Page<{ id: number; checkedInAt: string; date: string; source: string }> {
   visitsThisMonth: number;
   monthly: { month: string; visits: number }[];
+  currentStreakDays: number;
+  longestStreakDays: number;
 }
 
 export interface MePayment {
