@@ -26,6 +26,10 @@ public class GymSettingsService {
             @Min(1) @Max(14) int weeklyVisitGoal,
             boolean memberCanEditEmail) {
         public UpdateSettingsRequest(String gymName, String timezone, int duplicateWindowMinutes, int dropOffDays,
+                                     int expiringSoonDays, int weeklyVisitGoal, boolean memberCanEditEmail) {
+            this(gymName, timezone, duplicateWindowMinutes, dropOffDays, expiringSoonDays, 10, weeklyVisitGoal, memberCanEditEmail);
+        }
+        public UpdateSettingsRequest(String gymName, String timezone, int duplicateWindowMinutes, int dropOffDays,
                                      int expiringSoonDays, boolean memberCanEditEmail) {
             this(gymName, timezone, duplicateWindowMinutes, dropOffDays, expiringSoonDays, 10, 3, memberCanEditEmail);
         }
