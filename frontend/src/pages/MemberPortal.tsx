@@ -22,7 +22,7 @@ export function MyHomePage() {
               <div className="membership-ring" style={{'--progress': `${Math.max(0, Math.min(100, m.daysRemaining === null ? 0 : Math.min(100, m.daysRemaining / 30 * 100)))}%`} as CSSProperties}><strong>{m.daysRemaining ?? 0}</strong><span>days</span></div>
             </div>
             <div className="portal-stats"><Stat label="Visits this week" value={m.weeklyGoalPaused?'Paused':`${m.visitsThisWeek}/${m.weeklyVisitGoal}`} hint={m.weeklyGoalPaused?'Approved pause — streak protected':'Weekly goal'}/><Stat label="Weekly streak" value={m.currentStreakWeeks} hint="Weeks meeting goal"/><Stat label="Visits this month" value={m.visitsThisMonth}/><Stat label="Dues" value={formatMoney(m.duesPaise)} hint={m.duesPaise > 0 ? 'Please pay at the front desk' : 'All paid up'}/><Stat label="Ends" value={formatDate(m.endDate)}/></div>
-            <div className="portal-actions"><a className="btn primary" href="/me/qr"><Activity size={16}/> Show QR pass</a><a className="btn" href="/me/renewal"><CalendarCheck2 size={16}/> Renew membership</a><a className="btn" href="/me/payments"><WalletCards size={16}/> View payments</a></div>
+            <div className="portal-actions"><a className="btn primary" href="/me/check-in"><Activity size={16}/> Scan gym QR to check in</a><a className="btn" href="/me/qr"><ShieldCheck size={16}/> Show my QR pass</a><a className="btn" href="/me/renewal"><CalendarCheck2 size={16}/> Renew membership</a><a className="btn" href="/me/payments"><WalletCards size={16}/> View payments</a></div>
           </>
         )}
       </QueryState>
