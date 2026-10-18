@@ -18,7 +18,7 @@ class RenewalOrderIT extends app.gym.support.AbstractIT {
                 .param("m", memberId).query(Integer.class).single();
 
         var created = post("/api/v1/me/renewal-orders", map("planId", planId), member)
-                .andExpect(status().isCreated()).andReturn();
+                .andExpect(status().isCreated());
         long orderId = ((Number) read(created, "$.id")).longValue();
         assertThat(read(created, "$.status").toString()).isEqualTo("PAYMENT_PENDING");
 
@@ -35,7 +35,7 @@ class RenewalOrderIT extends app.gym.support.AbstractIT {
                 "allowOverpayment", false,
                 "addonOrderId", null,
                 "renewalOrderId", orderId
-        ), owner).andExpect(status().isCreated()).andReturn();
+        ), owner).andExpect(status().isCreated());
 
         assertThat(read(payment, "$.renewalOrderId").toString()).isEqualTo(Long.toString(orderId));
         Integer after = jdbc.sql("SELECT count(*) FROM membership WHERE member_id=:m")
