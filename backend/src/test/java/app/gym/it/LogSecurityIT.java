@@ -17,21 +17,21 @@ import org.springframework.http.MediaType;
 class LogSecurityIT extends app.gym.support.AbstractIT {
 
     private ListAppender<ILoggingEvent> appender;
-    private Logger root;
+    private Logger appLogger;
 
     @BeforeEach
     void attach() {
-        root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        appLogger = (Logger) LoggerFactory.getLogger("app.gym");
         appender = new ListAppender<>();
         appender.start();
-        root.addAppender(appender);
-        root.setLevel(Level.DEBUG);
+        appLogger.addAppender(appender);
+        appLogger.setLevel(Level.DEBUG);
     }
 
     @AfterEach
     void detach() {
-        root.detachAppender(appender);
-        root.setLevel(Level.INFO);
+        appLogger.detachAppender(appender);
+        appLogger.setLevel(Level.INFO);
     }
 
     @Test
