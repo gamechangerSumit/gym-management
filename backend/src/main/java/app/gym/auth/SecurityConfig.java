@@ -68,6 +68,7 @@ public class SecurityConfig {
                 // Defence in depth on top of method security.
                 .requestMatchers("/api/v1/staff/**", "/api/v1/settings/**", "/api/v1/audit/**", "/api/v1/users/**").hasRole("OWNER")
                 .requestMatchers("/api/v1/me", "/api/v1/me/**").hasRole("MEMBER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/addons").hasAnyRole("OWNER", "STAFF", "MEMBER")
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/change-password").authenticated()
                 // Everything else under /api/v1 is back-office: members get 403 before any body is even parsed.
                 .requestMatchers("/api/v1/**").hasAnyRole("OWNER", "STAFF")
