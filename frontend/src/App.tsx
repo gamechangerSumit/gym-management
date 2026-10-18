@@ -11,6 +11,8 @@ import { PaymentsPage } from './pages/PaymentsPage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { ScanPage } from './pages/ScanPage';
 import { AttendancePage } from './pages/AttendancePage';
+import { GymQrPage } from './pages/GymQrPage';
+import { MemberCheckInPage } from './pages/MemberCheckInPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditPage, SettingsPage, StaffPage } from './pages/AdminPages';
 import { MyAttendancePage, MyHomePage, MyPaymentsPage, MyProfilePage, MyQrPage } from './pages/MemberPortal';
@@ -59,6 +61,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/scan" element={<ScanPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/gym-qr" element={<GymQrPage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/members/:id" element={<MemberDetailPage />} />
           <Route path="/plans" element={<PlansPage />} />
@@ -80,6 +83,7 @@ export default function App() {
         <Route element={<MemberLayout />}>
           <Route path="/me" element={<MyHomePage />} />
           <Route path="/me/qr" element={<MyQrPage />} />
+          <Route path="/me/check-in" element={<MemberCheckInPage />} />
           <Route path="/me/attendance" element={<MyAttendancePage />} />
           <Route path="/me/payments" element={<MyPaymentsPage />} />
           <Route path="/me/profile" element={<MyProfilePage />} />
