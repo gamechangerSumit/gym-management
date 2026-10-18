@@ -58,6 +58,8 @@ public class DashboardService {
         return jdbc.sql(Sql.load("dashboard_kpis"))
                 .param("today", today)
                 .param("soon", gs.expiringSoonDays())
+                .param("monthStart", Db.ts(clock.startOfDay(today.withDayOfMonth(1))))
+                .param("nextMonthStart", Db.ts(clock.startOfDay(today.withDayOfMonth(1).plusMonths(1))))
                 .query((rs, i) -> new Summary(rs.getLong("active_members"), rs.getLong("expiring_soon"),
                         rs.getLong("expired"), rs.getLong("todays_checkins"), collections, gs.expiringSoonDays(), today,
                         rs.getLong("active_members_7d"), rs.getLong("open_no_show_cases"),
