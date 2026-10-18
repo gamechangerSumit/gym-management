@@ -41,13 +41,15 @@ public class AttendanceService {
     private final GymSettingsService settings;
     private final QrPassService passes;
     private final MemberService members;
+    private final NoShowService noShows;
 
     public AttendanceService(
             JdbcClient jdbc,
             GymClock clock,
             GymSettingsService settings,
             QrPassService passes,
-            MemberService members
+            MemberService members,
+            NoShowService noShows
     ) {
         this.jdbc = jdbc;
         this.clock = clock;
@@ -214,6 +216,9 @@ public class AttendanceService {
                 .param("by", CurrentUser.idOrNull())
                 .param("pass", passId)
                 .update();
+
+        // A valid return visit closes the open risk case while preserving its history.
+        noShows.resolveOnReturn(memberId);
 
         return withMember(
                 ScanResult.CHECKED_IN,
