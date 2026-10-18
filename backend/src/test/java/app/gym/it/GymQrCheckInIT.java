@@ -15,12 +15,12 @@ class GymQrCheckInIT extends app.gym.support.AbstractIT {
         Who member = createMemberUser("gym-qr-member", memberId);
 
         var qr = post("/api/v1/attendance/gym-qr", map(), owner)
-                .andExpect(status().isOk()).andReturn();
+                .andExpect(status().isOk());
         String payload = read(qr, "$.payload").toString();
         assertThat(payload).startsWith("GYMCHECKIN:");
 
         var response = post("/api/v1/me/check-in", map("token", payload), member)
-                .andExpect(status().isOk()).andReturn();
+                .andExpect(status().isOk());
         assertThat(read(response, "$.result").toString()).isEqualTo("CHECKED_IN");
         assertThat(read(response, "$.memberId")).isEqualTo(memberId);
 
