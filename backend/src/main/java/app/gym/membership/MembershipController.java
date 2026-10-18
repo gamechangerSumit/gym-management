@@ -1,5 +1,6 @@
 package app.gym.membership;
 
+import app.gym.common.ApiException;
 import app.gym.membership.MembershipDtos.AssignRequest;
 import app.gym.membership.MembershipDtos.MembershipDto;
 import app.gym.membership.MembershipDtos.ReasonRequest;
