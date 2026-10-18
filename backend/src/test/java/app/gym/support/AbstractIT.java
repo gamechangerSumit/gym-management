@@ -155,6 +155,15 @@ public abstract class AbstractIT {
         return call(HttpMethod.GET, url, null, who);
     }
 
+    protected ResultActions getHtml(String url, Who who) throws Exception {
+        MockHttpServletRequestBuilder b = request(HttpMethod.GET, url).accept(MediaType.TEXT_HTML).with(csrf());
+        if (who != null) {
+            AppUser user = new AppUser(who.id(), who.login(), who.role());
+            b.with(authentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities())));
+        }
+        return mvc.perform(b);
+    }
+
     protected ResultActions post(String url, Object body, Who who) throws Exception {
         return call(HttpMethod.POST, url, body, who);
     }
