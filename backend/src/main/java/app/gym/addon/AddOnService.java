@@ -15,13 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AddOnService {
     public record AddOnDto(long id, String kind, String name, String description, long pricePaise,
-                           Integer validityDays, Integer stockOnHand, Integer sessionsIncluded, boolean active) {}
+                           Integer validityDays, Integer stockOnHand, Integer sessionsIncluded, boolean active, String imageData) {}
     public record OrderDto(long id, long memberId, String memberCode, String memberName, long addonId,
                            String addonName, String kind, int quantity, long unitPricePaise, long totalPaise,
                            Integer sessionsIncluded, int sessionsUsed, String status, Instant createdAt,
                            Instant paidAt, Instant fulfilledAt) {}
     public record AddOnRequest(String kind, String name, String description, long pricePaise,
-                               Integer validityDays, Integer stockOnHand, Integer sessionsIncluded, Boolean active) {}
+                               Integer validityDays, Integer stockOnHand, Integer sessionsIncluded, Boolean active, String imageData) {}
     public record CreateOrderRequest(Long addonId, Integer quantity) {}
 
     private final JdbcClient jdbc;
@@ -34,25 +34,25 @@ public class AddOnService {
 
     public List<AddOnDto> catalog(boolean includeInactive) {
         String where = includeInactive ? "" : " WHERE active = TRUE";
-        return jdbc.sql("SELECT id, kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active " +
+        return jdbc.sql("SELECT id, kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active, image_data " +
                 "FROM gym_addon" + where + " ORDER BY active DESC, kind, name")
             .query((rs, row) -> new AddOnDto(rs.getLong("id"), rs.getString("kind"), rs.getString("name"),
                 rs.getString("description"), rs.getLong("price_paise"), intOrNull(rs, "validity_days"),
-                intOrNull(rs, "stock_on_hand"), intOrNull(rs, "sessions_included"), rs.getBoolean("active"))).list();
+                intOrNull(rs, "stock_on_hand"), intOrNull(rs, "sessions_included"), rs.getBoolean("active"), rs.getString("image_data"))).list();
     }
 
     @Transactional
     public AddOnDto create(AddOnRequest req) {
         validate(req);
         long id = jdbc.sql("""
-            INSERT INTO gym_addon(kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active)
-            VALUES (:kind, :name, :description, :price, :validity, :stock, :sessions, :active)
+            INSERT INTO gym_addon(kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active, image_data)
+            VALUES (:kind, :name, :description, :price, :validity, :stock, :sessions, :active, :image)
             RETURNING id
             """).param("kind", req.kind()).param("name", req.name().trim())
             .param("description", clean(req.description())).param("price", req.pricePaise())
             .param("validity", req.validityDays()).param("stock", req.stockOnHand())
             .param("sessions", req.sessionsIncluded()).param("active", req.active() == null || req.active())
-            .query(Long.class).single();
+            .param("image", cleanImage(req.imageData())).query(Long.class).single();
         audit.record("ADDON_CREATED", "ADDON", id, describe(req));
         return get(id);
     }
@@ -63,12 +63,12 @@ public class AddOnService {
         int changed = jdbc.sql("""
             UPDATE gym_addon SET kind=:kind, name=:name, description=:description, price_paise=:price,
                 validity_days=:validity, stock_on_hand=:stock, sessions_included=:sessions,
-                active=:active, updated_at=now() WHERE id=:id
+                active=:active, image_data=:image, updated_at=now() WHERE id=:id
             """).param("kind", req.kind()).param("name", req.name().trim())
             .param("description", clean(req.description())).param("price", req.pricePaise())
             .param("validity", req.validityDays()).param("stock", req.stockOnHand())
             .param("sessions", req.sessionsIncluded()).param("active", req.active() == null || req.active())
-            .param("id", id).update();
+            .param("image", cleanImage(req.imageData())).param("id", id).update();
         if (changed == 0) throw ApiException.notFound("Add-on not found.");
         audit.record("ADDON_UPDATED", "ADDON", id, describe(req));
         return get(id);
@@ -79,6 +79,8 @@ public class AddOnService {
             throw ApiException.badRequest("INVALID_ADDON_KIND", "Choose PT, DIET or PRODUCT.");
         if (req.name() == null || req.name().isBlank() || req.name().trim().length() > 120)
             throw ApiException.badRequest("INVALID_ADDON_NAME", "Add-on name is required (maximum 120 characters).");
+        if (req.imageData() != null && !req.imageData().isBlank() && (!req.imageData().startsWith("data:image/") || req.imageData().length() > 2_800_000))
+            throw ApiException.badRequest("INVALID_ADDON_IMAGE", "Use an image smaller than 2 MB.");
         if (req.description() != null && req.description().length() > 500)
             throw ApiException.badRequest("INVALID_ADDON_DESCRIPTION", "Description must be 500 characters or fewer.");
         if (req.pricePaise() <= 0 || req.pricePaise() > 10_000_000_000L)
@@ -98,10 +100,10 @@ public class AddOnService {
     }
 
     public AddOnDto get(long id) {
-        return jdbc.sql("SELECT id, kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active FROM gym_addon WHERE id=:id")
+        return jdbc.sql("SELECT id, kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active, image_data FROM gym_addon WHERE id=:id")
             .param("id", id).query((rs, row) -> new AddOnDto(rs.getLong("id"), rs.getString("kind"), rs.getString("name"),
                 rs.getString("description"), rs.getLong("price_paise"), intOrNull(rs, "validity_days"),
-                intOrNull(rs, "stock_on_hand"), intOrNull(rs, "sessions_included"), rs.getBoolean("active")))
+                intOrNull(rs, "stock_on_hand"), intOrNull(rs, "sessions_included"), rs.getBoolean("active"), rs.getString("image_data")))
             .optional().orElseThrow(() -> ApiException.notFound("Add-on not found."));
     }
 
@@ -259,6 +261,7 @@ public class AddOnService {
         return rs.wasNull() ? null : value;
     }
 
+    private static String cleanImage(String value) { return value == null || value.isBlank() ? null : value; }
     private static String clean(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private static Map<String,Object> describe(AddOnRequest req) {
         Map<String,Object> out=new LinkedHashMap<>();
