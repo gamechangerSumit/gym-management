@@ -27,6 +27,8 @@ import app.gym.settings.GymSettings;
 import app.gym.settings.GymSettingsService;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -112,6 +114,10 @@ public class MePortalService {
         LocalDate today = clock.today();
         int soon = settings.get().expiringSoonDays();
         long visits = visitsThisMonth(id, today);
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        long visitsThisWeek = visitsBetween(id, weekStart, today);
+        int weeklyGoal = settings.get().weeklyVisitGoal();
+        int streakWeeks = currentStreakWeeks(id, today, weeklyGoal);
         long duesPaise = dues.duesFor(id).duesPaise();
         return jdbc.sql("SELECT p.name, ms.start_date, ms.end_date, ms.status FROM membership ms "
                         + "JOIN membership_plan p ON p.id = ms.plan_id "
@@ -123,10 +129,10 @@ public class MePortalService {
                     LocalDate end = Db.date(rs, "end_date");
                     return new MeMembership(true, rs.getString("name"), start, end,
                             StatusCalculator.compute(rs.getString("status"), start, end, today, soon),
-                            StatusCalculator.daysRemaining(today, end), visits, duesPaise);
+                            StatusCalculator.daysRemaining(today, end), visits, visitsThisWeek, weeklyGoal, streakWeeks, duesPaise);
                 })
                 .optional()
-                .orElse(new MeMembership(false, null, null, null, null, null, visits, duesPaise));
+                .orElse(new MeMembership(false, null, null, null, null, null, visits, visitsThisWeek, weeklyGoal, streakWeeks, duesPaise));
     }
 
     public MeAttendancePage attendance(Paging paging) {
@@ -143,6 +149,33 @@ public class MePortalService {
         PageResponse<MeAttendanceItem> page = PageResponse.of(items, paging.page(), paging.size(), total);
         return new MeAttendancePage(page.items(), page.page(), page.size(), page.totalItems(), page.totalPages(),
                 visitsThisMonth(id, today), monthly(id, today));
+    }
+
+    private long visitsBetween(long memberId, LocalDate from, LocalDate to) {
+        return jdbc.sql("SELECT count(*) FROM attendance_record WHERE member_id = :m AND checkin_date BETWEEN :from AND :to")
+                .param("m", memberId).param("from", from).param("to", to)
+                .query(Long.class).single();
+    }
+
+    /** Consecutive calendar weeks that reached the configured goal; current incomplete week does not reset a streak. */
+    private int currentStreakWeeks(long memberId, LocalDate today, int goal) {
+        LocalDate currentWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate from = currentWeek.minusWeeks(52);
+        Map<LocalDate, Long> counts = new HashMap<>();
+        jdbc.sql("SELECT date_trunc('week', checkin_date)::date AS week_start, count(*) AS visits " +
+                        "FROM attendance_record WHERE member_id = :m AND checkin_date >= :from AND checkin_date <= :today GROUP BY 1")
+                .param("m", memberId).param("from", from).param("today", today)
+                .query((rs, row) -> {
+                    counts.put(Db.date(rs, "week_start"), rs.getLong("visits"));
+                    return 0;
+                }).list();
+        LocalDate cursor = counts.getOrDefault(currentWeek, 0L) >= goal ? currentWeek : currentWeek.minusWeeks(1);
+        int streak = 0;
+        while (!cursor.isBefore(from) && counts.getOrDefault(cursor, 0L) >= goal) {
+            streak++;
+            cursor = cursor.minusWeeks(1);
+        }
+        return streak;
     }
 
     private long visitsThisMonth(long memberId, LocalDate today) {
