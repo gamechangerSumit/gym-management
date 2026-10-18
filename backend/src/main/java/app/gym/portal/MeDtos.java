@@ -15,7 +15,12 @@ public final class MeDtos {
 
     public record MeProfile(String memberCode, String fullName, String phone, String email, LocalDate joinDate,
                             String emergencyContact, String status, boolean transactionalMessagesEnabled, boolean marketingConsent,
-                            boolean canEditEmail) {}
+                            boolean canEditEmail) {
+        public MeProfile(String memberCode, String fullName, String phone, String email, LocalDate joinDate,
+                         String emergencyContact, String status, boolean canEditEmail) {
+            this(memberCode, fullName, phone, email, joinDate, emergencyContact, status, true, false, canEditEmail);
+        }
+    }
 
     /** Only editable fields. Unknown fields (name, phone, ...) are rejected by strict JSON binding. */
     public record MePatchRequest(@Email @Size(max = 160) String email, @Size(max = 200) String emergencyContact,
