@@ -49,6 +49,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
         "app.bootstrap.owner-must-change-password=false",
         "app.rate-limit.ip-capacity=100000",
         "app.rate-limit.account-capacity=100000",
+        "app.automation.enabled=false",
         "spring.main.banner-mode=off"
 })
 @AutoConfigureMockMvc
