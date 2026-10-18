@@ -19,5 +19,10 @@ public final class AttendanceDtos {
                                LocalDate membershipEndDate, Instant checkedInAt) {}
 
     public record AttendanceDto(long id, long memberId, String memberCode, String memberName, Instant checkedInAt,
-                                LocalDate date, String source, String recordedBy, String assistedReason) {}
+                                LocalDate date, String source, String recordedBy, String assistedReason) {
+        public AttendanceDto(long id, long memberId, String memberCode, String memberName, Instant checkedInAt,
+                             LocalDate date, String source, String recordedBy) {
+            this(id, memberId, memberCode, memberName, checkedInAt, date, source, recordedBy, null);
+        }
+    }
 }
