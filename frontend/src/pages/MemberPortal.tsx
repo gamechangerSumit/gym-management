@@ -11,6 +11,7 @@ import { Empty, Field, FormError, Modal, Pager, QueryState, Stat, StatusBadge } 
 export function MyHomePage() {
   const profile = useQuery({ queryKey: ['me'], queryFn: () => get<MeProfile>('/api/v1/me') });
   const ms = useQuery({ queryKey: ['me-ms'], queryFn: () => get<MeMembership>('/api/v1/me/membership') });
+  const attendance = useQuery({ queryKey: ['me-att', 0], queryFn: () => get<MeAttendancePage>('/api/v1/me/attendance'+qs({page:0,size:1})) });
   return (
     <>
       <div className="portal-welcome"><div><span className="eyebrow">MEMBER SPACE</span><h1>{profile.data ? `Hi, ${profile.data.fullName.split(' ')[0]} 👋` : 'My Gym'}</h1><p className="muted">Your membership, visits and payments at a glance.</p></div><div className="portal-avatar"><UserRound size={22}/></div></div>
@@ -21,7 +22,7 @@ export function MyHomePage() {
               <div><span className="eyebrow">CURRENT PLAN</span><h2>{m.planName}</h2><div className="member-status-line"><StatusBadge status={m.status}/><span>{m.daysRemaining !== null && m.daysRemaining >= 0 ? `${m.daysRemaining} days left` : 'Membership ended'}</span></div></div>
               <div className="membership-ring" style={{'--progress': `${Math.max(0, Math.min(100, m.daysRemaining === null ? 0 : Math.min(100, m.daysRemaining / 30 * 100)))}%`} as CSSProperties}><strong>{m.daysRemaining ?? 0}</strong><span>days</span></div>
             </div>
-            <div className="portal-stats"><Stat label="Visits this week" value={m.weeklyGoalPaused?'Paused':`${m.visitsThisWeek}/${m.weeklyVisitGoal}`} hint={m.weeklyGoalPaused?'Approved pause — streak protected':'Weekly goal'}/><Stat label="Weekly streak" value={m.currentStreakWeeks} hint="Weeks meeting goal"/><Stat label="Visits this month" value={m.visitsThisMonth}/><Stat label="Dues" value={formatMoney(m.duesPaise)} hint={m.duesPaise > 0 ? 'Please pay at the front desk' : 'All paid up'}/><Stat label="Ends" value={formatDate(m.endDate)}/></div>
+            <div className="portal-stats"><Stat label="Visits this week" value={m.weeklyGoalPaused?'Paused':m.visitsThisWeek+'/'+m.weeklyVisitGoal} hint={m.weeklyGoalPaused?'Approved pause — streak protected':'Weekly goal'}/><Stat label="Weekly streak" value={m.currentStreakWeeks} hint="Weeks meeting goal"/><Stat label="Current daily streak" value={attendance.data ? attendance.data.currentStreakDays + ' days' : '—'} hint="Consecutive days with attendance"/><Stat label="Highest daily streak" value={attendance.data ? attendance.data.longestStreakDays + ' days' : '—'} hint="Your all-time personal best"/><Stat label="Visits this month" value={m.visitsThisMonth}/><Stat label="Dues" value={formatMoney(m.duesPaise)} hint={m.duesPaise > 0 ? 'Please pay at the front desk' : 'All paid up'}/><Stat label="Ends" value={formatDate(m.endDate)}/></div>
             <div className="portal-actions"><a className="btn primary" href="/me/check-in"><Activity size={16}/> Scan gym QR to check in</a><a className="btn" href="/me/qr"><ShieldCheck size={16}/> Show my QR pass</a><a className="btn" href="/me/renewal"><CalendarCheck2 size={16}/> Renew membership</a><a className="btn" href="/me/payments"><WalletCards size={16}/> View payments</a></div>
           </>
         )}
