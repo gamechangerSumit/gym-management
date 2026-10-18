@@ -16,6 +16,7 @@ import { AuditPage, SettingsPage, StaffPage } from './pages/AdminPages';
 import { MyAttendancePage, MyHomePage, MyPaymentsPage, MyProfilePage, MyQrPage } from './pages/MemberPortal';
 import { AddOnsPage, MemberAddOnsPage } from './pages/AddOnsPage';
 import { MemberRenewalPage, RenewalOrdersPage } from './pages/RenewalOrdersPage';
+import { RemindersPage } from './pages/RemindersPage';
 
 type Need = 'staff' | 'member' | 'owner' | keyof StaffPermissions;
 
@@ -64,7 +65,8 @@ export default function App() {
           <Route element={<Guard need="canRecordPayments" />}><Route path="/payments" element={<PaymentsPage />} /></Route>
           <Route element={<Guard need="canManageMemberships" />}><Route path="/recovery" element={<RecoveryPage />} />
           <Route path="/addons" element={<AddOnsPage />} />
-          <Route path="/renewal-orders" element={<RenewalOrdersPage />} /></Route>
+          <Route path="/renewal-orders" element={<RenewalOrdersPage />} />
+          <Route path="/reminders" element={<RemindersPage />} /></Route>
           <Route element={<Guard need="canViewReports" />}><Route path="/reports" element={<ReportsPage />} /></Route>
           <Route element={<Guard need="owner" />}>
             <Route path="/staff" element={<StaffPage />} />
