@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
-  Activity, BarChart3, Bell, CalendarCheck2, CreditCard, Dumbbell, FileClock, LayoutDashboard, CalendarClock,
+  Activity, BarChart3, Bell, CalendarCheck2, CreditCard, Dumbbell, FileClock, LayoutDashboard, CalendarClock, BellRing,
   LogOut, Menu, QrCode, Settings, Users, UserCog, X, ChevronRight, ShoppingBag
 } from 'lucide-react';
 import { useState } from 'react';
@@ -37,6 +37,7 @@ export function StaffLayout() {
         { to: '/payments', label: 'Payments', show: can('canRecordPayments'), icon: CreditCard },
         { to: '/recovery', label: 'Retention', show: can('canManageMemberships'), icon: Activity },
         { to: '/renewal-orders', label: 'Renewal orders', show: isOwner || can('canManageMemberships') || can('canRecordPayments'), icon: CalendarClock },
+        { to: '/reminders', label: 'Reminders', show: isOwner || can('canManageMemberships'), icon: BellRing },
         { to: '/addons', label: 'Add-ons', show: isOwner || can('canRecordPayments') || can('canManageMemberships'), icon: ShoppingBag },
         { to: '/reports', label: 'Reports', show: can('canViewReports'), icon: BarChart3 },
       ],
