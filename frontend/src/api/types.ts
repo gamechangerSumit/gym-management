@@ -234,6 +234,7 @@ export interface Settings {
   duplicateWindowMinutes: number;
   dropOffDays: number;
   expiringSoonDays: number;
+  weeklyVisitGoal: number;
   memberCanEditEmail: boolean;
 }
 
@@ -273,6 +274,9 @@ export interface MeMembership {
   status: string | null;
   daysRemaining: number | null;
   visitsThisMonth: number;
+  visitsThisWeek: number;
+  weeklyVisitGoal: number;
+  currentStreakWeeks: number;
   duesPaise: number;
 }
 
