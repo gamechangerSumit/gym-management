@@ -37,8 +37,8 @@ public class AddOnService {
         return jdbc.sql("SELECT id, kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active " +
                 "FROM gym_addon" + where + " ORDER BY active DESC, kind, name")
             .query((rs, row) -> new AddOnDto(rs.getLong("id"), rs.getString("kind"), rs.getString("name"),
-                rs.getString("description"), rs.getLong("price_paise"), Db.intOrNull(rs, "validity_days"),
-                Db.intOrNull(rs, "stock_on_hand"), Db.intOrNull(rs, "sessions_included"), rs.getBoolean("active"))).list();
+                rs.getString("description"), rs.getLong("price_paise"), intOrNull(rs, "validity_days"),
+                intOrNull(rs, "stock_on_hand"), intOrNull(rs, "sessions_included"), rs.getBoolean("active"))).list();
     }
 
     @Transactional
@@ -81,8 +81,8 @@ public class AddOnService {
             throw ApiException.badRequest("INVALID_ADDON_NAME", "Add-on name is required (maximum 120 characters).");
         if (req.description() != null && req.description().length() > 500)
             throw ApiException.badRequest("INVALID_ADDON_DESCRIPTION", "Description must be 500 characters or fewer.");
-        if (req.pricePaise() <= 0)
-            throw ApiException.badRequest("INVALID_ADDON_PRICE", "Price must be greater than zero.");
+        if (req.pricePaise() <= 0 || req.pricePaise() > 10_000_000_000L)
+            throw ApiException.badRequest("INVALID_ADDON_PRICE", "Price must be greater than zero and within the supported payment limit.");
         if (req.validityDays() != null && (req.validityDays() < 1 || req.validityDays() > 3650))
             throw ApiException.badRequest("INVALID_ADDON_VALIDITY", "Validity must be between 1 and 3650 days.");
         if ("PRODUCT".equals(req.kind()) && (req.stockOnHand() == null || req.stockOnHand() < 0))
@@ -100,8 +100,8 @@ public class AddOnService {
     public AddOnDto get(long id) {
         return jdbc.sql("SELECT id, kind, name, description, price_paise, validity_days, stock_on_hand, sessions_included, active FROM gym_addon WHERE id=:id")
             .param("id", id).query((rs, row) -> new AddOnDto(rs.getLong("id"), rs.getString("kind"), rs.getString("name"),
-                rs.getString("description"), rs.getLong("price_paise"), Db.intOrNull(rs, "validity_days"),
-                Db.intOrNull(rs, "stock_on_hand"), Db.intOrNull(rs, "sessions_included"), rs.getBoolean("active")))
+                rs.getString("description"), rs.getLong("price_paise"), intOrNull(rs, "validity_days"),
+                intOrNull(rs, "stock_on_hand"), intOrNull(rs, "sessions_included"), rs.getBoolean("active")))
             .optional().orElseThrow(() -> ApiException.notFound("Add-on not found."));
     }
 
@@ -237,6 +237,11 @@ public class AddOnService {
             .param("used",used).param("status",status).param("id",orderId).update();
         audit.record("PT_SESSION_RECORDED","ADDON_ORDER",orderId,Map.of("sessionsUsed",used,"sessionsIncluded",order.sessionsIncluded()));
         return getOrder(orderId);
+    }
+
+    private static Integer intOrNull(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
+        int value = rs.getInt(column);
+        return rs.wasNull() ? null : value;
     }
 
     private static String clean(String value) { return value == null || value.isBlank() ? null : value.trim(); }
