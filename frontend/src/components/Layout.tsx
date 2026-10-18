@@ -27,6 +27,7 @@ export function StaffLayout() {
         { to: '/dashboard', label: 'Dashboard', show: true, icon: LayoutDashboard },
         { to: '/scan', label: 'Check-in', show: true, icon: QrCode },
         { to: '/attendance', label: 'Attendance', show: true, icon: CalendarCheck2 },
+        { to: '/gym-qr', label: 'Gym QR display', show: true, icon: QrCode },
       ],
     },
     {
@@ -119,7 +120,7 @@ export function MemberLayout() {
   const { session, logout } = useAuth();
   const items = [
     { to: '/me', label: 'Home', icon: LayoutDashboard, end: true },
-    { to: '/me/qr', label: 'My QR', icon: QrCode },
+    { to: '/me/check-in', label: 'Check-in', icon: QrCode },
     { to: '/me/attendance', label: 'Visits', icon: CalendarCheck2 },
     { to: '/me/payments', label: 'Payments', icon: CreditCard },
     { to: '/me/profile', label: 'Profile', icon: Users },
