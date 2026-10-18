@@ -44,7 +44,7 @@ public final class MeDtos {
     public record MeAttendanceItem(long id, Instant checkedInAt, LocalDate date, String source) {}
 
     public record MeAttendancePage(List<MeAttendanceItem> items, int page, int size, long totalItems, int totalPages,
-                                   long visitsThisMonth, List<MonthVisits> monthly) {}
+                                   long visitsThisMonth, List<MonthVisits> monthly, int currentStreakDays, int longestStreakDays) {}
 
     public record MePayment(long id, String receiptNo, long amountPaise, Instant paidAt, String method, String status) {}
 
