@@ -29,3 +29,7 @@ SELECT
     JOIN membership ms ON ms.id = p.membership_id
     WHERE p.status = 'RECORDED' AND ms.renewed_from_id IS NOT NULL
       AND p.paid_at >= :monthStart AND p.paid_at < :nextMonthStart) AS renewal_collected_month_paise
+,
+  (SELECT COALESCE(sum(p.amount_paise), 0) FROM payment p
+    WHERE p.status = 'RECORDED' AND p.addon_order_id IS NOT NULL
+      AND p.paid_at >= :monthStart AND p.paid_at < :nextMonthStart) AS addon_revenue_month_paise
