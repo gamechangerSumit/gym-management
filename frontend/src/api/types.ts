@@ -58,6 +58,10 @@ export interface MemberDetail {
   duesPaise: number | null;
 }
 
+export interface RenewalPlan { id:number; name:string; durationDays:number; pricePaise:number; description:string|null; }
+
+export interface RenewalOrder { id:number; memberId:number; memberCode:string; memberName:string; sourceMembershipId:number; planId:number; planName:string; pricePaise:number; durationDays:number; status:string; paidMembershipId:number|null; createdAt:string; paidAt:string|null; }
+
 export interface AddOn {
   id: number;
   kind: 'PT' | 'DIET' | 'PRODUCT';
@@ -131,6 +135,7 @@ export interface Payment {
   recordedBy: string | null;
   note: string | null;
   addonOrderId: number | null;
+  renewalOrderId: number | null;
 }
 
 export interface Dues {
