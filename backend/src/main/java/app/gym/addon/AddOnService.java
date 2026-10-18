@@ -218,6 +218,7 @@ public class AddOnService {
     public OrderDto fulfill(long orderId) {
         OrderDto order=getOrder(orderId);
         if ("FULFILLED".equals(order.status())) throw ApiException.conflict("ALREADY_FULFILLED","Order is already fulfilled.");
+        if ("PT".equals(order.kind())) throw ApiException.conflict("PT_SESSION_TRACKING_REQUIRED","Record PT sessions individually.");
         if (!"PAID".equals(order.status()) && !"IN_PROGRESS".equals(order.status()))
             throw ApiException.conflict("PAYMENT_REQUIRED","Record and associate the payment before fulfilment.");
         jdbc.sql("UPDATE addon_order SET status='FULFILLED', fulfilled_at=now(), updated_at=now() WHERE id=:id")
