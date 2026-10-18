@@ -76,18 +76,20 @@ public class MePortalService {
     public MeProfile profile() {
         long id = memberId();
         boolean canEditEmail = settings.get().memberCanEditEmail();
-        return jdbc.sql("SELECT member_code, full_name, phone, email, join_date, emergency_contact, status "
+        return jdbc.sql("SELECT member_code, full_name, phone, email, join_date, emergency_contact, status, " +
+                        "transactional_messages_enabled, marketing_consent "
                         + "FROM member_profile WHERE id = :id")
                 .param("id", id)
                 .query((rs, i) -> new MeProfile(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
-                        Db.date(rs, "join_date"), rs.getString(6), rs.getString(7), canEditEmail))
+                        Db.date(rs, "join_date"), rs.getString(6), rs.getString(7), rs.getBoolean(8), rs.getBoolean(9), canEditEmail))
                 .single();
     }
 
     @Transactional
     public MeProfile patch(MePatchRequest req) {
         long id = memberId();
-        if (req.email() == null && req.emergencyContact() == null) {
+        if (req.email() == null && req.emergencyContact() == null
+                && req.transactionalMessagesEnabled() == null && req.marketingConsent() == null) {
             throw ApiException.badRequest("NOTHING_TO_UPDATE", "Provide a field to update.");
         }
         if (req.email() != null && !settings.get().memberCanEditEmail()) {
@@ -104,8 +106,22 @@ public class MePortalService {
             jdbc.sql("UPDATE member_profile SET emergency_contact = :e, updated_at = now() WHERE id = :id")
                     .param("e", ec).param("id", id).update();
         }
+        if (req.transactionalMessagesEnabled() != null) {
+            jdbc.sql("UPDATE member_profile SET transactional_messages_enabled=:enabled, updated_at=now() WHERE id=:id")
+                .param("enabled", req.transactionalMessagesEnabled()).param("id", id).update();
+            if (!req.transactionalMessagesEnabled()) {
+                jdbc.sql("UPDATE notification_outbox SET status='CANCELLED', updated_at=now() WHERE member_id=:id AND status='QUEUED'")
+                    .param("id", id).update();
+            }
+        }
+        if (req.marketingConsent() != null) {
+            jdbc.sql("UPDATE member_profile SET marketing_consent=:consent, updated_at=now() WHERE id=:id")
+                .param("consent", req.marketingConsent()).param("id", id).update();
+        }
         audit.record("MEMBER_SELF_UPDATED", "MEMBER", id, Map.of(
-                "emailChanged", req.email() != null, "emergencyContactChanged", req.emergencyContact() != null));
+                "emailChanged", req.email() != null, "emergencyContactChanged", req.emergencyContact() != null,
+                "transactionalMessagesPreferenceChanged", req.transactionalMessagesEnabled() != null,
+                "marketingConsentChanged", req.marketingConsent() != null));
         return profile();
     }
 
