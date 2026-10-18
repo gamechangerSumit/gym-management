@@ -17,13 +17,26 @@ public final class PaymentDtos {
             @NotBlank String method,
             Instant paidAt,
             @Size(max = 300) String note,
-            Boolean allowOverpayment) {}
+            Boolean allowOverpayment,
+            Long addonOrderId) {
+        public PaymentRequest(Long memberId, Long membershipId, long amountPaise, String method,
+                              Instant paidAt, String note, Boolean allowOverpayment) {
+            this(memberId, membershipId, amountPaise, method, paidAt, note, allowOverpayment, null);
+        }
+    }
 
     public record VoidRequest(@NotBlank @Size(max = 300) String reason) {}
 
     public record PaymentDto(long id, long memberId, String memberCode, String memberName, Long membershipId,
                              long amountPaise, Instant paidAt, String method, String receiptNo, String status,
-                             String voidReason, Instant voidedAt, String recordedBy, String note) {}
+                             String voidReason, Instant voidedAt, String recordedBy, String note, Long addonOrderId) {
+        public PaymentDto(long id, long memberId, String memberCode, String memberName, Long membershipId,
+                          long amountPaise, Instant paidAt, String method, String receiptNo, String status,
+                          String voidReason, Instant voidedAt, String recordedBy, String note) {
+            this(id, memberId, memberCode, memberName, membershipId, amountPaise, paidAt, method, receiptNo,
+                 status, voidReason, voidedAt, recordedBy, note, null);
+        }
+    }
 
     public record DuesDto(long billedPaise, long paidPaise, long duesPaise) {}
 
