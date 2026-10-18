@@ -32,10 +32,10 @@ public final class MeDtos {
 
     public record MeMembership(boolean hasMembership, String planName, LocalDate startDate, LocalDate endDate,
                                String status, Long daysRemaining, long visitsThisMonth, long visitsThisWeek,
-                               int weeklyVisitGoal, int currentStreakWeeks, long duesPaise) {
+                               int weeklyVisitGoal, int currentStreakWeeks, boolean weeklyGoalPaused, long duesPaise) {
         public MeMembership(boolean hasMembership, String planName, LocalDate startDate, LocalDate endDate,
                             String status, Long daysRemaining, long visitsThisMonth, long duesPaise) {
-            this(hasMembership, planName, startDate, endDate, status, daysRemaining, visitsThisMonth, 0, 3, 0, duesPaise);
+            this(hasMembership, planName, startDate, endDate, status, daysRemaining, visitsThisMonth, 0, 3, 0, false, duesPaise);
         }
     }
 
