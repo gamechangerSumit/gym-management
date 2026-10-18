@@ -1,6 +1,8 @@
 package app.gym.attendance;
 
+import app.gym.auth.CurrentUser;
 import app.gym.common.ApiException;
+import app.gym.settings.GymClock;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -16,7 +18,8 @@ public class NoShowService {
     public record OutcomeRequest(String outcome, String note, LocalDate nextActionDate) {}
 
     private final JdbcClient jdbc;
-    public NoShowService(JdbcClient jdbc) { this.jdbc = jdbc; }
+    private final GymClock clock;
+    public NoShowService(JdbcClient jdbc, GymClock clock) { this.jdbc = jdbc; this.clock = clock; }
 
     @Transactional
     public int scan(int threshold) {
@@ -28,12 +31,12 @@ public class NoShowService {
         return jdbc.sql("""
             INSERT INTO no_show_case (gym_id, member_id, last_attendance_at, absent_days)
             SELECT m.gym_id, m.id, latest.last_visit,
-                   GREATEST(0, CURRENT_DATE - COALESCE(latest.last_visit::date, m.join_date))
+                   GREATEST(0, (:today - COALESCE(latest.last_visit::date, m.join_date)))
             FROM member_profile m
             JOIN membership ms ON ms.member_id = m.id
                 AND ms.status = 'ACTIVE'
-                AND ms.start_date <= CURRENT_DATE
-                AND ms.end_date >= CURRENT_DATE
+                AND ms.start_date <= :today
+                AND ms.end_date >= :today
             LEFT JOIN LATERAL (
                 SELECT MAX(a.checked_in_at) AS last_visit
                 FROM attendance_record a WHERE a.member_id = m.id
@@ -44,7 +47,7 @@ public class NoShowService {
             DO UPDATE SET last_attendance_at = EXCLUDED.last_attendance_at,
                           absent_days = EXCLUDED.absent_days,
                           updated_at = now()
-            """).param("threshold", threshold).update();
+            """).param("today", clock.today()).param("threshold", threshold).update();
     }
 
     public List<NoShowCase> openCases() {
@@ -91,10 +94,11 @@ public class NoShowService {
             .param("nextAction", request.nextActionDate()).param("id", caseId).update();
         if (updated == 0) throw ApiException.notFound("Open no-show case not found.");
         jdbc.sql("""
-            INSERT INTO no_show_followup_event(case_id, outcome, note, next_action_date)
-            VALUES (:id, :outcome, :note, :nextAction)
+            INSERT INTO no_show_followup_event(case_id, outcome, note, next_action_date, recorded_by)
+            VALUES (:id, :outcome, :note, :nextAction, :recordedBy)
             """).param("id", caseId).param("outcome", request.outcome())
-            .param("note", request.note()).param("nextAction", request.nextActionDate()).update();
+            .param("note", request.note()).param("nextAction", request.nextActionDate())
+            .param("recordedBy", CurrentUser.idOrNull()).update();
     }
 
     @Transactional
