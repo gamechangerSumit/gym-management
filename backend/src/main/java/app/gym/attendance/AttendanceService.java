@@ -56,6 +56,7 @@ public class AttendanceService {
         this.settings = settings;
         this.passes = passes;
         this.members = members;
+        this.noShows = noShows;
     }
 
     /**
