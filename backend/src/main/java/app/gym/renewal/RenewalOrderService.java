@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RenewalOrderService {
     public record CreateRequest(Long planId) {}
+    public record RenewalPlan(long id, String name, int durationDays, long pricePaise, String description) {}
     public record RenewalOrder(long id, long memberId, String memberCode, String memberName,
                                long sourceMembershipId, long planId, String planName, long pricePaise,
                                int durationDays, String status, Long paidMembershipId, Instant createdAt, Instant paidAt) {}
@@ -30,6 +31,12 @@ public class RenewalOrderService {
 
     public RenewalOrderService(JdbcClient jdbc, GymClock clock, MembershipService memberships, AuditService audit) {
         this.jdbc = jdbc; this.clock = clock; this.memberships = memberships; this.audit = audit;
+    }
+
+    public List<RenewalPlan> availablePlans() {
+        return jdbc.sql("SELECT id,name,duration_days,price_paise,description FROM membership_plan WHERE active=TRUE ORDER BY duration_days,price_paise")
+            .query((rs,row)->new RenewalPlan(rs.getLong("id"),rs.getString("name"),rs.getInt("duration_days"),
+                rs.getLong("price_paise"),rs.getString("description"))).list();
     }
 
     @Transactional
