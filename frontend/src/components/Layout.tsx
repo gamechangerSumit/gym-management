@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   Activity, BarChart3, Bell, CalendarCheck2, CreditCard, Dumbbell, FileClock, LayoutDashboard,
-  LogOut, Menu, QrCode, Settings, Users, UserCog, X, ChevronRight
+  LogOut, Menu, QrCode, Settings, Users, UserCog, X, ChevronRight, ShoppingBag
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -36,6 +36,7 @@ export function StaffLayout() {
         { to: '/plans', label: 'Plans', show: true, icon: Dumbbell },
         { to: '/payments', label: 'Payments', show: can('canRecordPayments'), icon: CreditCard },
         { to: '/recovery', label: 'Renewals', show: can('canManageMemberships'), icon: Activity },
+        { to: '/addons', label: 'Add-ons', show: isOwner || can('canRecordPayments') || can('canManageMemberships'), icon: ShoppingBag },
         { to: '/reports', label: 'Reports', show: can('canViewReports'), icon: BarChart3 },
       ],
     },
@@ -120,6 +121,7 @@ export function MemberLayout() {
     { to: '/me/attendance', label: 'Visits', icon: CalendarCheck2 },
     { to: '/me/payments', label: 'Payments', icon: CreditCard },
     { to: '/me/profile', label: 'Profile', icon: Users },
+    { to: '/me/addons', label: 'Add-ons', icon: ShoppingBag },
   ];
   return (
     <div className="member-app">
