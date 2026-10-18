@@ -591,3 +591,10 @@ ul { padding-left: 1.2rem; }
 .no-show-outcome input,.no-show-outcome select,.attendance-toolbar input[type=number] { width:100%;min-width:0; }
 .no-show-outcome .btn { white-space:nowrap; }
 @media(max-width:760px){.section-heading{flex-direction:column}.no-show-outcome{grid-template-columns:1fr 1fr}.no-show-outcome label:nth-child(3){grid-column:1/-1}.no-show-outcome .btn{grid-column:1/-1}.no-show-days{min-width:unset;align-items:flex-start}.recovery-card{gap:.75rem}}
+
+
+/* Assisted check-in reason */
+.manual-reason { display:flex;flex-direction:column;gap:.35rem;margin-bottom:.75rem;color:var(--muted);font-size:.68rem;font-weight:800; }
+.manual-reason select { width:100%;max-width:420px; }
+.attendance-source { max-width:210px; }
+@media(max-width:600px){.attendance-source{max-width:120px;white-space:normal}.manual-reason select{max-width:none}}
