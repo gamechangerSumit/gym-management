@@ -122,6 +122,12 @@ public class AttendanceService {
         return checkIn(memberId, "MANUAL", null, reason.trim());
     }
 
+    /** Member self-check-in after the gym QR challenge has been validated. */
+    @Transactional
+    public ScanResponse checkInFromGymQr(long memberId) {
+        return checkIn(memberId, "QR", null);
+    }
+
     private ScanResponse checkIn(long memberId, String source, Long passId) {
         return checkIn(memberId, source, passId, null);
     }
