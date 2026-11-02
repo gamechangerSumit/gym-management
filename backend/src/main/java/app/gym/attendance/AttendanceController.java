@@ -23,9 +23,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AttendanceController {
 
     private final AttendanceService attendance;
+    private final GymCheckInQrService gymQr;
 
-    public AttendanceController(AttendanceService attendance) {
+    public AttendanceController(AttendanceService attendance, GymCheckInQrService gymQr) {
         this.attendance = attendance;
+        this.gymQr = gymQr;
+    }
+
+    /** Generates the short-lived QR that members scan with their own phones. */
+    @PostMapping("/gym-qr")
+    @PreAuthorize("@perm.staffOrOwner()")
+    public GymCheckInQrService.GymQrDto gymQr() {
+        return gymQr.issue();
     }
 
     @PostMapping("/scan")

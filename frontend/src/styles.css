@@ -651,3 +651,17 @@ ul { padding-left: 1.2rem; }
 /* Add-on product imagery */
 .addon-product-image{display:block;width:100%;height:180px;object-fit:cover;border-radius:14px;background:var(--surface-muted,#f3f4f6);margin-bottom:14px}
 .addon-product-image-preview{display:block;max-width:220px;max-height:180px;object-fit:contain;border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:6px;margin:4px 0 14px}
+
+
+/* Gym QR display and member self check-in */
+.gym-qr-display{margin-top:20px;display:flex;justify-content:center;padding:28px}
+.gym-qr-content,.member-checkin-result{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;max-width:520px;width:100%}
+.gym-qr-content h2,.member-checkin-result h2{margin:4px 0}
+.gym-qr-expiry{display:flex;align-items:center;gap:7px;font-size:.9rem}
+.member-checkin-card{margin-top:20px;padding:22px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px}
+.member-camera-frame{position:relative;overflow:hidden;width:min(100%,520px);aspect-ratio:4/3;border-radius:18px;background:#101827;display:grid;place-items:center}
+.member-camera-video{width:100%;height:100%;object-fit:cover}
+.member-camera-reticle{position:absolute;width:58%;aspect-ratio:1;border:3px solid #fff;border-radius:22px;box-shadow:0 0 0 999px #0002;pointer-events:none}
+.scanner-canvas-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px}
+.member-checkin-result svg{color:var(--success,#16a34a)}
+.member-checkin-result.error svg{color:var(--danger,#dc2626)}

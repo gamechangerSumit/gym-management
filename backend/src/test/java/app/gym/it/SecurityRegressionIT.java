@@ -52,7 +52,7 @@ class SecurityRegressionIT extends app.gym.support.AbstractIT {
     @Test
     void flywayAppliedAllMigrations() {
         Integer n = jdbc.sql("SELECT count(*) FROM flyway_schema_history WHERE success").query(Integer.class).single();
-        assertThat(n).isEqualTo(15);
+        assertThat(n).isEqualTo(16);
     }
 
     @Test
