@@ -74,14 +74,9 @@ class MembershipIT extends app.gym.support.AbstractIT {
         setUp();
         long first = assign(member, plan, "2026-10-01");
         post("/api/v1/memberships/" + first + "/renew", null, owner)
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.startDate").value("2026-10-31"))
-                .andExpect(jsonPath("$.endDate").value("2026-11-29"))
-                .andExpect(jsonPath("$.renewedFromId").value(first));
-        get("/api/v1/members/" + member + "/memberships", owner).andExpect(jsonPath("$.length()").value(2));
-        // Old row untouched.
-        post("/api/v1/memberships/" + first + "/renew", null, owner)
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ALREADY_RENEWED"));
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PAYMENT_REQUIRED"));
+        // No membership row is added until a matching renewal payment is recorded.
+        get("/api/v1/members/" + member + "/memberships", owner).andExpect(jsonPath("$.length()").value(1));
         String endOfFirst = jdbc.sql("SELECT end_date::text FROM membership WHERE id = :id").param("id", first)
                 .query(String.class).single();
         assertThat(endOfFirst).isEqualTo("2026-10-30");
@@ -92,7 +87,8 @@ class MembershipIT extends app.gym.support.AbstractIT {
         setUp();
         long first = assign(member, plan, "2026-08-01"); // ended 2026-08-30
         post("/api/v1/memberships/" + first + "/renew", null, owner)
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.startDate").value("2026-10-15"));
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PAYMENT_REQUIRED"));
+        get("/api/v1/members/" + member + "/memberships", owner).andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
@@ -143,7 +139,8 @@ class MembershipIT extends app.gym.support.AbstractIT {
         post("/api/v1/memberships/" + ms + "/hold", map("reason", "x"), none).andExpect(status().isForbidden());
         get("/api/v1/members/" + member + "/memberships", none).andExpect(status().isOk());
 
-        post("/api/v1/memberships/" + ms + "/renew", null, manager).andExpect(status().isCreated());
+        post("/api/v1/memberships/" + ms + "/renew", null, manager)
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("PAYMENT_REQUIRED"));
         // Cancelling is owner-only even for staff who manage memberships.
         post("/api/v1/memberships/" + ms + "/cancel", map("reason", "x"), manager).andExpect(status().isForbidden());
     }
@@ -164,9 +161,9 @@ class MembershipIT extends app.gym.support.AbstractIT {
     void membershipActionsAreAudited() throws Exception {
         setUp();
         long ms = assign(member, plan, "2026-10-01");
-        post("/api/v1/memberships/" + ms + "/renew", null, owner);
+        post("/api/v1/memberships/" + ms + "/renew", null, owner).andExpect(status().isConflict());
         get("/api/v1/audit?entityType=MEMBERSHIP", owner)
                 .andExpect(jsonPath("$.items[?(@.action=='MEMBERSHIP_ASSIGNED')]").isNotEmpty())
-                .andExpect(jsonPath("$.items[?(@.action=='MEMBERSHIP_RENEWED')]").isNotEmpty());
+                .andExpect(jsonPath("$.items[?(@.action=='MEMBERSHIP_RENEWED')]").isEmpty());
     }
 }

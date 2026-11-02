@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
-  Activity, BarChart3, Bell, CalendarCheck2, CreditCard, Dumbbell, FileClock, LayoutDashboard,
-  LogOut, Menu, QrCode, Settings, Users, UserCog, X, ChevronRight
+  Activity, BarChart3, Bell, CalendarCheck2, CreditCard, Dumbbell, FileClock, LayoutDashboard, CalendarClock, BellRing,
+  LogOut, Menu, QrCode, Settings, Users, UserCog, X, ChevronRight, ShoppingBag
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -27,6 +27,7 @@ export function StaffLayout() {
         { to: '/dashboard', label: 'Dashboard', show: true, icon: LayoutDashboard },
         { to: '/scan', label: 'Check-in', show: true, icon: QrCode },
         { to: '/attendance', label: 'Attendance', show: true, icon: CalendarCheck2 },
+        { to: '/gym-qr', label: 'Gym QR display', show: true, icon: QrCode },
       ],
     },
     {
@@ -35,7 +36,10 @@ export function StaffLayout() {
         { to: '/members', label: 'Members', show: true, icon: Users },
         { to: '/plans', label: 'Plans', show: true, icon: Dumbbell },
         { to: '/payments', label: 'Payments', show: can('canRecordPayments'), icon: CreditCard },
-        { to: '/recovery', label: 'Renewals', show: can('canManageMemberships'), icon: Activity },
+        { to: '/recovery', label: 'Retention', show: can('canManageMemberships'), icon: Activity },
+        { to: '/renewal-orders', label: 'Renewal orders', show: isOwner || can('canManageMemberships') || can('canRecordPayments'), icon: CalendarClock },
+        { to: '/reminders', label: 'Reminders', show: isOwner || can('canManageMemberships'), icon: BellRing },
+        { to: '/addons', label: 'Add-ons', show: isOwner || can('canRecordPayments') || can('canManageMemberships'), icon: ShoppingBag },
         { to: '/reports', label: 'Reports', show: can('canViewReports'), icon: BarChart3 },
       ],
     },
@@ -116,10 +120,12 @@ export function MemberLayout() {
   const { session, logout } = useAuth();
   const items = [
     { to: '/me', label: 'Home', icon: LayoutDashboard, end: true },
-    { to: '/me/qr', label: 'My QR', icon: QrCode },
+    { to: '/me/check-in', label: 'Check-in', icon: QrCode },
     { to: '/me/attendance', label: 'Visits', icon: CalendarCheck2 },
     { to: '/me/payments', label: 'Payments', icon: CreditCard },
     { to: '/me/profile', label: 'Profile', icon: Users },
+    { to: '/me/addons', label: 'Add-ons', icon: ShoppingBag },
+    { to: '/me/renewal', label: 'Renew', icon: CalendarClock },
   ];
   return (
     <div className="member-app">

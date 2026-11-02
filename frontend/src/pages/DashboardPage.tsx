@@ -18,6 +18,17 @@ export function DashboardPage() {
     <>
       <PageHeader title="Dashboard" actions={<div className="actions"><Link className="btn" to="/attendance"><CalendarCheck2 size={16}/> Attendance</Link><Link className="btn" to="/members"><Users size={16}/> Members</Link>{isOwner&&<Link className="btn primary" to="/payments"><CreditCard size={16}/> Payments</Link>}</div>} />
       <QueryState q={summary}>{(s)=><section className="stats dashboard-stats"><Stat label="Active members" value={s.activeMembers}/><Stat label={`Expiring in ${s.expiringSoonDays} days`} value={s.expiringSoon}/><Stat label="Expired" value={s.expired}/><Stat label="Check-ins today" value={s.todaysCheckIns}/>{s.collections&&<Stat label="Collected this month" value={formatMoney(s.collections.totalPaise)} hint={`${s.collections.paymentCount} payments · ${s.collections.rule}`}/>}</section>}</QueryState>
+      <QueryState q={summary}>{(s)=><>
+        <div className="dashboard-section-head"><div><span className="eyebrow">RETENTION</span><h2>Member health and renewals</h2></div></div>
+        <section className="stats dashboard-stats">
+          <Stat label="Active in 7 days" value={s.activeMembers7d}/>
+          <Stat label="Open no-show cases" value={s.openNoShowCases}/>
+          <Stat label="Returned in 7 days" value={s.membersReturned7d}/>
+          <Stat label="Renewals due in 7 days" value={s.renewalsDue7d}/>
+          <Stat label="Renewal collection this month" value={formatMoney(s.renewalCollectedMonthPaise)}/>
+          <Stat label="Add-on revenue this month" value={formatMoney(s.addonRevenueMonthPaise)}/>
+        </section>
+      </>}</QueryState>
       <div className="dashboard-welcome"><div><span className="eyebrow">TODAY AT A GLANCE</span><h2>Keep the floor moving.</h2><p className="muted">Focus on the members and tasks that need attention today.</p></div><Link className="quick-action" to="/members"><span><UserPlus size={18}/></span><div><strong>Add member</strong><small>Grow your member base</small></div><ArrowUpRight size={17}/></Link></div>
       <div className="dashboard-section-head"><div><span className="eyebrow">ACTION CENTER</span><h2>Who needs attention</h2></div><Link className="text-link" to="/recovery">Open recovery <ArrowUpRight size={14}/></Link></div>
       <QueryState q={actions} isEmpty={(a)=>a.items.length===0} empty={<Empty title="All clear" hint="No members need follow-up right now."/>}>{(a)=><><ul className="list">{a.items.map((i,idx)=><li key={`${i.type}-${i.memberId}-${idx}`} className="row"><div><Link to={`/members/${i.memberId}`}><strong>{i.memberName}</strong></Link>{' '}<span className="muted">{i.memberCode} · {i.phone}</span><div>{i.detail}</div><small className="muted">Why listed: {i.rule}</small></div><span className="badge info">{TYPE_LABEL[i.type]??titleCase(i.type)}</span></li>)}</ul><details className="muted"><summary>How this list is built</summary><ul>{a.rules.map(r=><li key={r}>{r}</li>)}</ul></details></>}</QueryState>
