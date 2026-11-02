@@ -122,6 +122,9 @@ public class MembershipService {
         }
         jdbc.sql("UPDATE membership SET status = 'ON_HOLD', hold_reason = :r WHERE id = :id")
                 .param("r", reason.trim()).param("id", id).update();
+        jdbc.sql("INSERT INTO membership_hold_event(membership_id,held_at,reason,held_by) VALUES (:id,:at,:reason,:by)")
+                .param("id",id).param("at",Db.ts(clock.now())).param("reason",reason.trim())
+                .param("by",CurrentUser.idOrNull()).update();
         audit.record("MEMBERSHIP_HELD", "MEMBERSHIP", id, Map.of("memberId", m.memberId(), "reason", reason.trim()));
         return get(id);
     }
@@ -133,6 +136,8 @@ public class MembershipService {
             throw ApiException.conflict("INVALID_STATE", "Only a membership on hold can be resumed.");
         }
         jdbc.sql("UPDATE membership SET status = 'ACTIVE', hold_reason = NULL WHERE id = :id").param("id", id).update();
+        jdbc.sql("UPDATE membership_hold_event SET resumed_at=:at,resumed_by=:by WHERE membership_id=:id AND resumed_at IS NULL")
+                .param("at",Db.ts(clock.now())).param("by",CurrentUser.idOrNull()).param("id",id).update();
         audit.record("MEMBERSHIP_RESUMED", "MEMBERSHIP", id, Map.of("memberId", m.memberId()));
         return get(id);
     }
@@ -146,6 +151,8 @@ public class MembershipService {
         }
         jdbc.sql("UPDATE membership SET status = 'CANCELLED', cancel_reason = :r WHERE id = :id")
                 .param("r", reason.trim()).param("id", id).update();
+        jdbc.sql("UPDATE membership_hold_event SET resumed_at=:at,resumed_by=:by WHERE membership_id=:id AND resumed_at IS NULL")
+                .param("at",Db.ts(clock.now())).param("by",CurrentUser.idOrNull()).param("id",id).update();
         audit.record("MEMBERSHIP_CANCELLED", "MEMBERSHIP", id,
                 Map.of("memberId", m.memberId(), "reason", reason.trim(), "pricePaise", m.pricePaise()));
         return get(id);

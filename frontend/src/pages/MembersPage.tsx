@@ -141,7 +141,6 @@ function MemberRow({ member: m }: { member: MemberSummary }) {
 
       <div className="member-contact">
         <span><Phone size={14} /> {m.phone || 'No phone'}</span>
-        {m.email && <span><Mail size={14} /> {m.email}</span>}
       </div>
 
       <div className="member-plan">

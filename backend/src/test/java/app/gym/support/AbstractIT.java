@@ -49,6 +49,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
         "app.bootstrap.owner-must-change-password=false",
         "app.rate-limit.ip-capacity=100000",
         "app.rate-limit.account-capacity=100000",
+        "app.automation.enabled=false",
         "spring.main.banner-mode=off"
 })
 @AutoConfigureMockMvc
@@ -104,7 +105,7 @@ public abstract class AbstractIT {
         jdbc.sql("ALTER SEQUENCE member_code_seq RESTART").update();
         jdbc.sql("ALTER SEQUENCE receipt_seq RESTART").update();
         jdbc.sql("UPDATE gym_settings SET timezone = 'Asia/Kolkata', duplicate_window_minutes = 10, drop_off_days = 7, "
-                + "expiring_soon_days = 7, member_can_edit_email = FALSE").update();
+                + "expiring_soon_days = 7, no_show_threshold_days = 10, weekly_visit_goal = 3, member_can_edit_email = FALSE").update();
         jdbc.sql("UPDATE gym SET name = 'Test Gym'").update();
         clock.set(START);
         rateLimiter.reset();
@@ -142,8 +143,25 @@ public abstract class AbstractIT {
         return mvc.perform(b);
     }
 
+    protected MockHttpServletRequestBuilder get(String url) {
+        return org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(url);
+    }
+
+    protected MockHttpServletRequestBuilder post(String url) {
+        return org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(url);
+    }
+
     protected ResultActions get(String url, Who who) throws Exception {
         return call(HttpMethod.GET, url, null, who);
+    }
+
+    protected ResultActions getHtml(String url, Who who) throws Exception {
+        MockHttpServletRequestBuilder b = request(HttpMethod.GET, url).accept(MediaType.TEXT_HTML).with(csrf());
+        if (who != null) {
+            AppUser user = new AppUser(who.id(), who.login(), who.role());
+            b.with(authentication(new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities())));
+        }
+        return mvc.perform(b);
     }
 
     protected ResultActions post(String url, Object body, Who who) throws Exception {

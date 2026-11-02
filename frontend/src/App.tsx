@@ -11,9 +11,14 @@ import { PaymentsPage } from './pages/PaymentsPage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { ScanPage } from './pages/ScanPage';
 import { AttendancePage } from './pages/AttendancePage';
+import { GymQrPage } from './pages/GymQrPage';
+import { MemberCheckInPage } from './pages/MemberCheckInPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditPage, SettingsPage, StaffPage } from './pages/AdminPages';
 import { MyAttendancePage, MyHomePage, MyPaymentsPage, MyProfilePage, MyQrPage } from './pages/MemberPortal';
+import { AddOnsPage, MemberAddOnsPage } from './pages/AddOnsPage';
+import { MemberRenewalPage, RenewalOrdersPage } from './pages/RenewalOrdersPage';
+import { RemindersPage } from './pages/RemindersPage';
 
 type Need = 'staff' | 'member' | 'owner' | keyof StaffPermissions;
 
@@ -56,11 +61,15 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/scan" element={<ScanPage />} />
           <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/gym-qr" element={<GymQrPage />} />
           <Route path="/members" element={<MembersPage />} />
           <Route path="/members/:id" element={<MemberDetailPage />} />
           <Route path="/plans" element={<PlansPage />} />
           <Route element={<Guard need="canRecordPayments" />}><Route path="/payments" element={<PaymentsPage />} /></Route>
-          <Route element={<Guard need="canManageMemberships" />}><Route path="/recovery" element={<RecoveryPage />} /></Route>
+          <Route element={<Guard need="canManageMemberships" />}><Route path="/recovery" element={<RecoveryPage />} />
+          <Route path="/addons" element={<AddOnsPage />} />
+          <Route path="/renewal-orders" element={<RenewalOrdersPage />} />
+          <Route path="/reminders" element={<RemindersPage />} /></Route>
           <Route element={<Guard need="canViewReports" />}><Route path="/reports" element={<ReportsPage />} /></Route>
           <Route element={<Guard need="owner" />}>
             <Route path="/staff" element={<StaffPage />} />
@@ -74,9 +83,12 @@ export default function App() {
         <Route element={<MemberLayout />}>
           <Route path="/me" element={<MyHomePage />} />
           <Route path="/me/qr" element={<MyQrPage />} />
+          <Route path="/me/check-in" element={<MemberCheckInPage />} />
           <Route path="/me/attendance" element={<MyAttendancePage />} />
           <Route path="/me/payments" element={<MyPaymentsPage />} />
           <Route path="/me/profile" element={<MyProfilePage />} />
+          <Route path="/me/addons" element={<MemberAddOnsPage />} />
+          <Route path="/me/renewal" element={<MemberRenewalPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFound />} />
